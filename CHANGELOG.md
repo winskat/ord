@@ -1,6 +1,26 @@
 Changelog
 =========
 
+[0.5.1-gm1](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm1) - 2023-03-18
+--------------------------------------------------------------------------------
+
+### Added
+- Add `wallet cardinals` command to list the cardinals (#1904)
+- Include the value in sats of inscriptions in `wallet inscriptions` (#1928)
+
+### Changed
+- Improve input selection when inscribing (#1858)
+- Require users manually specify a `--fee-rate` for `wallet inscribe` (#1897)
+- Allow `wallet send` to send the last inscription from an output (#1927)
+
+### Documentation
+- Fix typo in Sparrow Wallet Guide (#1947)
+
+### Misc
+- Use receiving addresses to receive, and change addresses for change (#1847)
+- Use `--fee-rate` to set the fee when sending cardinals (#1922)
+- Fix an obscure error when sending satpoint `x:x:300` to a segwit bech32 address (#1929)
+
 [0.5.1](https://github.com/casey/ord/releases/tag/0.5.1) - 2023-02-21
 ---------------------------------------------------------------------
 
