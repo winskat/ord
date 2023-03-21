@@ -4,6 +4,11 @@ use {super::*, crate::wallet::Wallet};
 pub(crate) struct Send {
   address: Address,
   outgoing: Outgoing,
+  #[clap(
+    long,
+    help = "Send an satpoint in an unconfirmed UTXO specified by <OUTGOING>"
+  )]
+  unconfirmed: bool,
   #[clap(long, help = "Use fee rate of <FEE_RATE> sats/vB")]
   fee_rate: FeeRate,
 }
@@ -34,7 +39,23 @@ impl Send {
 
     let client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
-    let unspent_outputs = index.get_unspent_outputs(Wallet::load(&options)?)?;
+    let mut unspent_outputs = index.get_unspent_outputs(Wallet::load(&options)?)?;
+
+    if self.unconfirmed {
+      match self.outgoing {
+        Outgoing::SatPoint(satpoint) => {
+          let outpoint = satpoint.outpoint;
+          unspent_outputs.insert(
+            outpoint,
+            Amount::from_sat(
+              client.get_raw_transaction(&outpoint.txid, None)?.output[outpoint.vout as usize]
+                .value,
+            ),
+          );
+        }
+        _ => bail!("--unconfirmed requires a satpoint in the <OUTGOING> argument"),
+      };
+    }
 
     let inscriptions = index.get_inscriptions(None)?;
 

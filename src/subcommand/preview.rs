@@ -83,6 +83,7 @@ impl Preview {
             file,
             no_backup: true,
             satpoint: None,
+            unconfirmed: false,
             dry_run: false,
             no_limit: false,
             destination: None,
