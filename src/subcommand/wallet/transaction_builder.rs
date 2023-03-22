@@ -104,6 +104,7 @@ pub struct TransactionBuilder {
   outgoing: SatPoint,
   outputs: Vec<(Address, Amount)>,
   recipient: Address,
+  alignment: Option<Address>,
   unused_change_addresses: Vec<Address>,
   utxos: BTreeSet<OutPoint>,
   target: Target,
@@ -123,6 +124,7 @@ impl TransactionBuilder {
     inscriptions: BTreeMap<SatPoint, InscriptionId>,
     amounts: BTreeMap<OutPoint, Amount>,
     recipient: Address,
+    alignment: Option<Address>,
     change: [Address; 2],
     fee_rate: FeeRate,
   ) -> Result<Transaction> {
@@ -131,6 +133,7 @@ impl TransactionBuilder {
       inscriptions,
       amounts,
       recipient,
+      alignment,
       change,
       fee_rate,
       Target::Postage,
@@ -143,6 +146,7 @@ impl TransactionBuilder {
     inscriptions: BTreeMap<SatPoint, InscriptionId>,
     amounts: BTreeMap<OutPoint, Amount>,
     recipient: Address,
+    alignment: Option<Address>,
     change: [Address; 2],
     fee_rate: FeeRate,
     output_value: Amount,
@@ -161,6 +165,7 @@ impl TransactionBuilder {
       inscriptions,
       amounts,
       recipient,
+      alignment,
       change,
       fee_rate,
       Target::Value(output_value),
@@ -184,6 +189,7 @@ impl TransactionBuilder {
     inscriptions: BTreeMap<SatPoint, InscriptionId>,
     amounts: BTreeMap<OutPoint, Amount>,
     recipient: Address,
+    alignment: Option<Address>,
     change: [Address; 2],
     fee_rate: FeeRate,
     target: Target,
@@ -206,6 +212,7 @@ impl TransactionBuilder {
       outgoing,
       outputs: Vec::new(),
       recipient,
+      alignment,
       unused_change_addresses: change.to_vec(),
       target,
     })
@@ -262,10 +269,13 @@ impl TransactionBuilder {
       self.outputs.insert(
         0,
         (
-          self
-            .unused_change_addresses
-            .pop()
-            .expect("not enough change addresses"),
+          match self.alignment.clone() {
+            Some(alignment) => alignment,
+            None => self
+              .unused_change_addresses
+              .pop()
+              .expect("not enough change addresses"),
+          },
           Amount::from_sat(sat_offset),
         ),
       );
@@ -577,7 +587,10 @@ impl TransactionBuilder {
           offset, sat_offset,
           "invariant: sat is at first position in recipient output"
         );
-      } else {
+      } else if self.alignment.is_none()
+        || (self.alignment.is_some()
+          && output.script_pubkey != self.alignment.as_ref().unwrap().script_pubkey())
+      {
         assert!(
           self
             .change_addresses
@@ -679,6 +692,7 @@ mod tests {
       BTreeMap::new(),
       utxos.clone().into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -716,6 +730,7 @@ mod tests {
       outgoing: satpoint(1, 0),
       inscriptions: BTreeMap::new(),
       recipient: recipient(),
+      alignment: None,
       unused_change_addresses: vec![change(0), change(1)],
       change_addresses: vec![change(0), change(1)].into_iter().collect(),
       inputs: vec![outpoint(1), outpoint(2), outpoint(3)],
@@ -751,6 +766,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
     )
@@ -768,6 +784,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -790,6 +807,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -815,6 +833,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -837,6 +856,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -857,6 +877,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -877,6 +898,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -903,6 +925,7 @@ mod tests {
         .into_iter()
         .collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -922,6 +945,7 @@ mod tests {
         .into_iter()
         .collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -941,6 +965,7 @@ mod tests {
         .into_iter()
         .collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -960,6 +985,7 @@ mod tests {
         .into_iter()
         .collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -985,6 +1011,7 @@ mod tests {
         .into_iter()
         .collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1008,6 +1035,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1033,6 +1061,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1054,6 +1083,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1079,6 +1109,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        None,
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1101,6 +1132,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1129,6 +1161,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1155,6 +1188,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1178,6 +1212,7 @@ mod tests {
       BTreeMap::new(),
       utxos.into_iter().collect(),
       recipient(),
+      None,
       [change(0), change(1)],
       FeeRate::try_from(1.0).unwrap(),
       Target::Postage,
@@ -1205,6 +1240,7 @@ mod tests {
       outgoing: satpoint(1, 0),
       inscriptions: BTreeMap::new(),
       recipient: recipient(),
+      alignment: alignment(),
       unused_change_addresses: vec![change(0), change(1)],
       change_addresses: vec![change(0), change(1)].into_iter().collect(),
       inputs: vec![outpoint(1), outpoint(2), outpoint(3)],
@@ -1234,6 +1270,7 @@ mod tests {
       outgoing: satpoint(1, 0),
       inscriptions: BTreeMap::new(),
       recipient: recipient(),
+      alignment: alignment(),
       unused_change_addresses: vec![change(0), change(1)],
       change_addresses: vec![change(0), change(1)].into_iter().collect(),
       inputs: vec![outpoint(1), outpoint(2), outpoint(3)],
@@ -1261,6 +1298,7 @@ mod tests {
         BTreeMap::from([(satpoint(2, 10 * COIN_VALUE), inscription_id(1))]),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1278,6 +1316,7 @@ mod tests {
         BTreeMap::from([(satpoint(1, 500), inscription_id(1))]),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1300,6 +1339,7 @@ mod tests {
       BTreeMap::from([(satpoint(1, 0), inscription_id(1))]),
       utxos.into_iter().collect(),
       recipient(),
+      alignment(),
       [change(0), change(1)],
       fee_rate,
     )
@@ -1329,6 +1369,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
         Amount::from_sat(1000)
@@ -1355,6 +1396,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
         Amount::from_sat(1500)
@@ -1378,6 +1420,7 @@ mod tests {
         BTreeMap::from([(satpoint(1, 500), inscription_id(1))]),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
         Amount::from_sat(1)
@@ -1402,6 +1445,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
         Amount::from_sat(1000)
@@ -1423,6 +1467,7 @@ mod tests {
         BTreeMap::new(),
         utxos.into_iter().collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(4.0).unwrap(),
         Amount::from_sat(1000)
@@ -1462,6 +1507,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
         Amount::from_sat(707)
@@ -1485,6 +1531,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(1.0).unwrap(),
       ),
@@ -1507,6 +1554,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(5.0).unwrap(),
         Amount::from_sat(1000)
@@ -1530,6 +1578,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(6.0).unwrap(),
         Amount::from_sat(1000)
@@ -1548,6 +1597,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [recipient(), change(1)],
         FeeRate::try_from(0.0).unwrap(),
         Amount::from_sat(1000)
@@ -1566,6 +1616,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(0)],
         FeeRate::try_from(0.0).unwrap(),
         Amount::from_sat(1000)
@@ -1584,6 +1635,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(2.0).unwrap(),
         Amount::from_sat(1500)
@@ -1607,6 +1659,7 @@ mod tests {
           .into_iter()
           .collect(),
         recipient(),
+        alignment(),
         [change(0), change(1)],
         FeeRate::try_from(250.0).unwrap(),
       ),

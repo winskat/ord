@@ -6,6 +6,8 @@ pub(crate) struct Send {
   outgoing: Outgoing,
   #[clap(long, help = "Use fee rate of <FEE_RATE> sats/vB")]
   fee_rate: FeeRate,
+  #[clap(long, help = "Send any alignment output to <ALIGNMENT>.")]
+  pub(crate) alignment: Option<Address>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -76,6 +78,7 @@ impl Send {
       inscriptions,
       unspent_outputs,
       self.address,
+      self.alignment,
       change,
       self.fee_rate,
     )?;
