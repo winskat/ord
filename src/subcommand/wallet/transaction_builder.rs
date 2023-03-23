@@ -112,8 +112,8 @@ pub struct TransactionBuilder {
 type Result<T> = std::result::Result<T, Error>;
 
 impl TransactionBuilder {
-  const ADDITIONAL_INPUT_VBYTES: usize = 58;
-  const ADDITIONAL_OUTPUT_VBYTES: usize = 43;
+  const ADDITIONAL_INPUT_VBYTES: f64 = 58.0;
+  const ADDITIONAL_OUTPUT_VBYTES: f64 = 43.0;
   const MAX_POSTAGE: Amount = Amount::from_sat(2 * 10_000);
   const SCHNORR_SIGNATURE_SIZE: usize = 64;
   pub(crate) const TARGET_POSTAGE: Amount = Amount::from_sat(10_000);
@@ -410,7 +410,7 @@ impl TransactionBuilder {
   /// We initialize wallets with taproot descriptors only, so we know that all
   /// inputs are taproot key path spends, which allows us to know that witnesses
   /// will all consist of single Schnorr signatures.
-  fn estimate_vbytes(&self) -> usize {
+  fn estimate_vbytes(&self) -> f64 {
     Self::estimate_vbytes_with(
       self.inputs.len(),
       self
@@ -422,8 +422,8 @@ impl TransactionBuilder {
     )
   }
 
-  fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> usize {
-    Transaction {
+  fn estimate_vbytes_with(inputs: usize, outputs: Vec<Address>) -> f64 {
+    let t = Transaction {
       version: 1,
       lock_time: PackedLockTime::ZERO,
       input: (0..inputs)
@@ -442,11 +442,13 @@ impl TransactionBuilder {
           script_pubkey: address.script_pubkey(),
         })
         .collect(),
-    }
-    .vsize()
+    };
+
+    t.weight() as f64 / 4.0
   }
 
   fn estimate_fee(&self) -> Amount {
+    // println!("size {} weight {}", self.estimate_vbytes(),
     self.fee_rate.fee(self.estimate_vbytes())
   }
 
@@ -602,7 +604,7 @@ impl TransactionBuilder {
     for input in &mut modified_tx.input {
       input.witness = Witness::from_vec(vec![vec![0; 64]]);
     }
-    let expected_fee = self.fee_rate.fee(modified_tx.vsize());
+    let expected_fee = self.fee_rate.fee(modified_tx.weight() as f64 / 4.0);
 
     assert_eq!(
       actual_fee, expected_fee,
@@ -1306,7 +1308,7 @@ mod tests {
     .unwrap();
 
     let fee =
-      fee_rate.fee(transaction.vsize() + TransactionBuilder::SCHNORR_SIGNATURE_SIZE / 4 + 1);
+      fee_rate.fee((transaction.weight() + TransactionBuilder::SCHNORR_SIGNATURE_SIZE) as f64 / 4.0 + 1.0);
 
     pretty_assert_eq!(
       transaction,
