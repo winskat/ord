@@ -386,7 +386,7 @@ impl Inscribe {
       reveal_tx.input[0].witness.push(script);
       reveal_tx.input[0].witness.push(&control_block.serialize());
 
-      fee_rate.fee(reveal_tx.vsize())
+      fee_rate.fee(reveal_tx.weight() as f64 / 4.0)
     };
 
     (reveal_tx, fee)
@@ -422,7 +422,7 @@ mod tests {
 
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
-    let fee = Amount::from_sat((1.0 * (reveal_tx.vsize() as f64)).ceil() as u64);
+    let fee = Amount::from_sat((reveal_tx.weight() as f64 / 4.0).ceil() as u64);
 
     assert_eq!(
       reveal_tx.output[0].value,
@@ -569,10 +569,10 @@ mod tests {
       )
       .unwrap();
 
-    let sig_vbytes = 17;
+    let sig_vbytes = 17.0;
     let fee = FeeRate::try_from(fee_rate)
       .unwrap()
-      .fee(commit_tx.vsize() + sig_vbytes)
+      .fee(commit_tx.weight() as f64 / 4.0 + sig_vbytes)
       .to_sat();
 
     let reveal_value = commit_tx
@@ -586,7 +586,7 @@ mod tests {
 
     let fee = FeeRate::try_from(fee_rate)
       .unwrap()
-      .fee(reveal_tx.vsize())
+      .fee(reveal_tx.weight() as f64 / 4.0)
       .to_sat();
 
     assert_eq!(
@@ -633,10 +633,10 @@ mod tests {
       )
       .unwrap();
 
-    let sig_vbytes = 17;
+    let sig_vbytes = 17.0;
     let fee = FeeRate::try_from(commit_fee_rate)
       .unwrap()
-      .fee(commit_tx.vsize() + sig_vbytes)
+      .fee(commit_tx.weight() as f64 / 4.0 + sig_vbytes)
       .to_sat();
 
     let reveal_value = commit_tx
@@ -650,7 +650,7 @@ mod tests {
 
     let fee = FeeRate::try_from(fee_rate)
       .unwrap()
-      .fee(reveal_tx.vsize())
+      .fee(reveal_tx.weight() as f64 / 4.0)
       .to_sat();
 
     assert_eq!(
