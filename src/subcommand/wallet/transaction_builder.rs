@@ -1404,8 +1404,8 @@ mod tests {
     )
     .unwrap();
 
-    let fee =
-      fee_rate.fee((transaction.weight() + TransactionBuilder::SCHNORR_SIGNATURE_SIZE) as f64 / 4.0 + 1.0);
+    let fee = fee_rate
+      .fee((transaction.weight() + TransactionBuilder::SCHNORR_SIGNATURE_SIZE) as f64 / 4.0 + 1.0);
 
     pretty_assert_eq!(
       transaction,
