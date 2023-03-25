@@ -106,7 +106,7 @@ impl Send {
         serde_json::Value::Null,              //  7. conf_target
         serde_json::Value::Null,              //  8. estimate_mode
         serde_json::Value::Null,              //  9. avoid_reuse
-        self.fee_rate.fee(1).to_sat().into(), // 10. fee_rate
+        self.fee_rate.fee(1.0).to_sat().into(), // 10. fee_rate
       ],
     )?;
     print_json(Output { transaction: txid })?;
@@ -126,7 +126,7 @@ impl Send {
         vec![serde_json::to_value((self.address).to_string())?].into(), //  1. recipients
         serde_json::Value::Null, //                                         2. conf_target
         serde_json::Value::Null, //                                         3. estimate_mode
-        self.fee_rate.fee(1).to_sat().into(), //                            4. fee_rate
+        self.fee_rate.fee(1.0).to_sat().into(), //                          4. fee_rate
         serde_json::from_str(if self.outgoing == Outgoing::Max {
           "{\"send_max\": true}" //                                         5. options
         } else {
