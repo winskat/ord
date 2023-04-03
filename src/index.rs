@@ -656,7 +656,7 @@ impl Index {
               }
               offset += end - start;
             }
-            Ok(None::<Result<Option<SatPoint>>>)
+            Ok::<(), Error>(())
           }
           Some(crate::index::List::Spent) => Err(anyhow!("output spent.")),
           None => Err(anyhow!("output not found")),
@@ -666,7 +666,7 @@ impl Index {
     }
   }
 
-  pub(crate) fn find_range(&self, search_start: u64, search_end: u64) -> Result<Option<Vec<FindRangeOutput>>> {
+  pub(crate) fn find_range(&self, search_start: u64, search_end: u64, outpoints: &Vec<OutPoint>) -> Result<Option<Vec<FindRangeOutput>>> {
     self.require_sat_index("find")?;
 
     let rtx = self.begin_read()?;
@@ -675,33 +675,60 @@ impl Index {
       return Ok(None);
     }
 
-    let mut remaining_sats = search_end - search_start;
-
-    let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
-
     let mut result = Vec::new();
-    for (key, value) in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-      let mut offset = 0;
-      for chunk in value.value().chunks_exact(11) {
-        let (start, end) = SatRange::load(chunk.try_into().unwrap());
-        if start < search_end && search_start < end {
-          let overlap_start = cmp::max(start, search_start);
-          let overlap_end = cmp::min(search_end, end);
-          result.push(FindRangeOutput {
-            start: overlap_start,
-            size: overlap_end - overlap_start,
-            satpoint: SatPoint {
-              outpoint: Entry::load(*key.value()),
-              offset: offset + overlap_start - start,
-            },
-          });
+    if outpoints.len() == 0 {
+      let mut remaining_sats = search_end - search_start;
+      let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
-          remaining_sats -= overlap_end - overlap_start;
-          if remaining_sats == 0 {
-            break;
+      for (key, value) in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
+        let mut offset = 0;
+        for chunk in value.value().chunks_exact(11) {
+          let (start, end) = SatRange::load(chunk.try_into().unwrap());
+          if start < search_end && search_start < end {
+            let overlap_start = cmp::max(start, search_start);
+            let overlap_end = cmp::min(search_end, end);
+            result.push(FindRangeOutput {
+              start: overlap_start,
+              size: overlap_end - overlap_start,
+              satpoint: SatPoint {
+                outpoint: Entry::load(*key.value()),
+                offset: offset + overlap_start - start,
+              },
+            });
+
+            remaining_sats -= overlap_end - overlap_start;
+            if remaining_sats == 0 {
+              break;
+            }
           }
+          offset += end - start;
         }
-        offset += end - start;
+      }
+    } else {
+      for outpoint in outpoints {
+        match self.list(*outpoint)? {
+          Some(crate::index::List::Unspent(ranges)) => {
+            let mut offset = 0;
+            for (start, end) in ranges {
+              if start < search_end && search_start < end {
+                let overlap_start = cmp::max(start, search_start);
+                let overlap_end = cmp::min(search_end, end);
+                result.push(FindRangeOutput {
+                  start: overlap_start,
+                  size: overlap_end - overlap_start,
+                  satpoint: SatPoint {
+                    outpoint: *outpoint,
+                    offset: offset + overlap_start - start,
+                  },
+                });
+              }
+              offset += end - start;
+            }
+            Ok::<(), Error>(())
+          }
+          Some(crate::index::List::Spent) => Err(anyhow!("output spent.")),
+          None => Err(anyhow!("output not found")),
+        }?;
       }
     }
 
