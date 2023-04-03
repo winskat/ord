@@ -2,6 +2,8 @@ use super::*;
 
 #[derive(Debug, Parser)]
 pub(crate) struct Find {
+  #[clap(long, help = "Only look in specified outpoint(s).")]
+  outpoint: Vec<OutPoint>,
   #[clap(help = "Find output and offset of <SAT>.")]
   sat: Sat,
 }
@@ -17,12 +19,16 @@ impl Find {
 
     index.update()?;
 
-    match index.find(self.sat.0)? {
+    match index.find(self.sat.0, &self.outpoint)? {
       Some(satpoint) => {
         print_json(Output { satpoint })?;
         Ok(())
       }
-      None => Err(anyhow!("sat has not been mined as of index height")),
+      None => Err(anyhow!(if self.outpoint.len() == 0 {
+        "sat has not been mined as of index height"
+      } else {
+        "sat was not round in satpoint(s)"
+      })),
     }
   }
 }

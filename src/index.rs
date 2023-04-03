@@ -608,7 +608,7 @@ impl Index {
     )
   }
 
-  pub(crate) fn find(&self, sat: u64) -> Result<Option<SatPoint>> {
+  pub(crate) fn find(&self, sat: u64, outpoints: &Vec<OutPoint>) -> Result<Option<SatPoint>> {
     self.require_sat_index("find")?;
 
     let rtx = self.begin_read()?;
@@ -617,23 +617,46 @@ impl Index {
       return Ok(None);
     }
 
-    let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
+    if outpoints.len() == 0 {
+      let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
-    for (key, value) in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-      let mut offset = 0;
-      for chunk in value.value().chunks_exact(11) {
-        let (start, end) = SatRange::load(chunk.try_into().unwrap());
-        if start <= sat && sat < end {
-          return Ok(Some(SatPoint {
-            outpoint: Entry::load(*key.value()),
-            offset: offset + sat - start,
-          }));
+      for (key, value) in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
+        let mut offset = 0;
+        for chunk in value.value().chunks_exact(11) {
+          let (start, end) = SatRange::load(chunk.try_into().unwrap());
+          if start <= sat && sat < end {
+            return Ok(Some(SatPoint {
+              outpoint: Entry::load(*key.value()),
+              offset: offset + sat - start,
+            }));
+          }
+          offset += end - start;
         }
-        offset += end - start;
       }
-    }
 
-    Ok(None)
+      Ok(None)
+    } else {
+      for outpoint in outpoints {
+        match self.list(*outpoint)? {
+          Some(crate::index::List::Unspent(ranges)) => {
+            let mut offset = 0;
+            for (start, end) in ranges {
+              if start <= sat && sat < end {
+                return Ok(Some(SatPoint {
+                  outpoint: *outpoint,
+                  offset: offset + sat - start,
+                }));
+              }
+              offset += end - start;
+            }
+            Ok(None::<Result<Option<SatPoint>>>)
+          }
+          Some(crate::index::List::Spent) => Err(anyhow!("output spent.")),
+          None => Err(anyhow!("output not found")),
+        }?;
+      }
+      Ok(None)
+    }
   }
 
   fn list_inner(&self, outpoint: OutPointValue) -> Result<Option<Vec<u8>>> {
