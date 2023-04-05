@@ -397,7 +397,7 @@ impl TransactionBuilder {
             Target::Value(value) => value,
           };
           let existing = self.outputs[self.current_output + self.padding_outputs].1;
-          if available < demand - existing {
+          if available.checked_add(existing) < Some(demand) {
             self.outputs[self.current_output + self.padding_outputs].1 += available;
             break;
           } else {
