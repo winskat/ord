@@ -644,54 +644,58 @@ impl TransactionBuilder {
       "invariant: change addresses appear at most once in outputs",
     );
 
-    for (recipient, target) in self.recipient.iter().zip(self.target) {
-      let mut offset = 0;
-      for output in &transaction.output {
-        if output.script_pubkey == recipient.script_pubkey() {
-          let slop = self.fee_rate.fee(Self::ADDITIONAL_OUTPUT_VBYTES);
+    let mut offset = 0;
+    for output in &transaction.output {
+      if output.script_pubkey == self.recipient[0].script_pubkey() {
+        assert_eq!(
+          offset, sat_offset,
+          "invariant: sat is at first position in first recipient output"
+        );
+        break;
+      }
+      offset += output.value;
+    }
 
-          match target {
-            Target::Postage => {
-              assert!(
-                Amount::from_sat(output.value) <= Self::MAX_POSTAGE + slop,
-                "invariant: excess postage is stripped"
-              );
-            }
-            Target::Value(value) => {
-              assert!(
-                Amount::from_sat(output.value).checked_sub(value).unwrap()
-                  <= self
-                    .change_addresses
-                    .iter()
-                    .map(|address| address.script_pubkey().dust_value())
-                    .max()
-                    .unwrap_or_default()
-                    + slop,
-                "invariant: output equals target value",
-              );
-            }
-          }
-          if output.script_pubkey == self.recipient[0].script_pubkey() {
-          assert_eq!(
-            offset, sat_offset,
-            "invariant: sat is at first position in first recipient output"
-          );
-          }
-        } else {
+    let slop = self.fee_rate.fee(Self::ADDITIONAL_OUTPUT_VBYTES);
+    let mut n = self.padding_outputs;
+    for (recipient, target) in self.recipient.iter().zip(self.target) {
+      let output = &transaction.output[n];
+      assert_eq!(output.script_pubkey, recipient.script_pubkey());
+
+      match target {
+        Target::Postage => {
           assert!(
-            self
-              .change_addresses
-              .iter()
-              .any(|change_address| change_address.script_pubkey() == output.script_pubkey) ||
-            self
-              .recipient
-              .iter()
-              .any(|recipient| recipient.script_pubkey() == output.script_pubkey),
-            "invariant: all outputs are either change or recipient: unrecognized output {}",
-            output.script_pubkey
+            Amount::from_sat(output.value) <= Self::MAX_POSTAGE + slop,
+            "invariant: excess postage is stripped"
           );
         }
-        offset += output.value;
+        Target::Value(value) => {
+          assert!(
+            Amount::from_sat(output.value).checked_sub(value).unwrap()
+              <= self
+                .change_addresses
+                .iter()
+                .map(|address| address.script_pubkey().dust_value())
+                .max()
+                .unwrap_or_default()
+                + slop,
+            "invariant: output equals target value",
+          );
+        }
+      }
+      n += 1;
+    }
+
+    for (i, output) in transaction.output.iter().enumerate() {
+      if i < self.padding_outputs || i >= self.padding_outputs + self.recipient.len() {
+        assert!(
+          self
+            .change_addresses
+            .iter()
+            .any(|change_address| change_address.script_pubkey() == output.script_pubkey),
+          "invariant: all outputs are either change or recipient: unrecognized output {} {}",
+          output.script_pubkey, i
+        );
       }
     }
 
