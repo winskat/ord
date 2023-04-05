@@ -224,7 +224,9 @@ fn home_page_inscriptions_are_sorted() {
   let mut inscriptions = String::new();
 
   for _ in 0..8 {
-    let Inscribe { inscriptions: i, .. } = inscribe(&rpc_server);
+    let Inscribe {
+      inscriptions: i, ..
+    } = inscribe(&rpc_server);
     inscriptions.insert_str(
       0,
       &format!("\n  <a href=/inscription/{}><iframe .*></a>", i[0]),
@@ -269,7 +271,9 @@ fn inscriptions_page_is_sorted() {
   let mut inscriptions = String::new();
 
   for _ in 0..8 {
-    let Inscribe { inscriptions: i, .. } = inscribe(&rpc_server);
+    let Inscribe {
+      inscriptions: i, ..
+    } = inscribe(&rpc_server);
     inscriptions.insert_str(0, &format!(".*<a href=/inscription/{}>.*", i[0]));
   }
 
@@ -282,9 +286,15 @@ fn inscriptions_page_has_next_and_previous() {
   let rpc_server = test_bitcoincore_rpc::spawn();
   create_wallet(&rpc_server);
 
-  let Inscribe { inscriptions: a, .. } = inscribe(&rpc_server);
-  let Inscribe { inscriptions: b, .. } = inscribe(&rpc_server);
-  let Inscribe { inscriptions: c, .. } = inscribe(&rpc_server);
+  let Inscribe {
+    inscriptions: a, ..
+  } = inscribe(&rpc_server);
+  let Inscribe {
+    inscriptions: b, ..
+  } = inscribe(&rpc_server);
+  let Inscribe {
+    inscriptions: c, ..
+  } = inscribe(&rpc_server);
 
   TestServer::spawn_with_args(&rpc_server, &[]).assert_response_regex(
     format!("/inscription/{}", b[0]),
@@ -294,7 +304,8 @@ fn inscriptions_page_has_next_and_previous() {
 <a class=prev href=/inscription/{}>❮</a>
 <iframe .* src=/preview/{}></iframe>
 <a class=next href=/inscription/{}>❯</a>
-</div>.*", a[0], b[0], c[0]
+</div>.*",
+      a[0], b[0], c[0]
     ),
   );
 }

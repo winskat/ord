@@ -212,7 +212,10 @@ impl TransactionBuilder {
       alignment,
       change,
       fee_rate,
-      output_value.iter().map(|output_value| Target::Value(*output_value)).collect(),
+      output_value
+        .iter()
+        .map(|output_value| Target::Value(*output_value))
+        .collect(),
       Amount::from_sat(0),
       Amount::from_sat(0),
     )?
@@ -336,7 +339,11 @@ impl TransactionBuilder {
   }
 
   fn align_outgoing(mut self) -> Self {
-    assert_eq!(self.outputs.len(), self.recipient.len(), "invariant: same number of outputs as recipients");
+    assert_eq!(
+      self.outputs.len(),
+      self.recipient.len(),
+      "invariant: same number of outputs as recipients"
+    );
 
     assert_eq!(
       self.outputs[0].0, self.recipient[0],
@@ -409,10 +416,15 @@ impl TransactionBuilder {
   fn add_value(mut self) -> Result<Self> {
     let estimated_fee = self.estimate_fee();
 
-    let min_value = self.recipient.iter().zip(self.target.iter()).map(|(recipient, target)| match target {
-      Target::Postage => recipient.script_pubkey().dust_value(),
-      Target::Value(value) => *value,
-    }).sum::<Amount>();
+    let min_value = self
+      .recipient
+      .iter()
+      .zip(self.target.iter())
+      .map(|(recipient, target)| match target {
+        Target::Postage => recipient.script_pubkey().dust_value(),
+        Target::Value(value) => *value,
+      })
+      .sum::<Amount>();
 
     let total = min_value
       .checked_add(estimated_fee)
@@ -422,7 +434,13 @@ impl TransactionBuilder {
     if self.padding_outputs == 0 {
       have = self.outputs.clone().iter().map(|output| output.1).sum();
     } else {
-      have = self.outputs.clone().iter().skip(1).map(|output| output.1).sum();
+      have = self
+        .outputs
+        .clone()
+        .iter()
+        .skip(1)
+        .map(|output| output.1)
+        .sum();
     }
     if let Some(mut deficit) = total.checked_sub(have) {
       while deficit > Amount::ZERO {
@@ -439,7 +457,9 @@ impl TransactionBuilder {
 
         while self.current_output < self.recipient.len() {
           let demand = match self.target[self.current_output] {
-            Target::Postage => self.recipient[self.current_output].script_pubkey().dust_value(),
+            Target::Postage => self.recipient[self.current_output]
+              .script_pubkey()
+              .dust_value(),
             Target::Value(value) => value,
           };
           let existing = self.outputs[self.current_output + self.padding_outputs].1;
@@ -490,10 +510,15 @@ impl TransactionBuilder {
 
     let value = total_output_amount - Amount::from_sat(sat_offset);
     if let Some(excess) = value.checked_sub(self.fee_rate.fee(self.estimate_vbytes())) {
-      let (max, target) = self.target.iter().map(|target| match target {
-        Target::Postage => (self.max_postage, self.target_postage),
-        Target::Value(value) => (*value, *value),
-      }).reduce(|(a, b), (c, d)| (a + c, b + d)).unwrap();
+      let (max, target) = self
+        .target
+        .iter()
+        .map(|target| match target {
+          Target::Postage => (self.max_postage, self.target_postage),
+          Target::Value(value) => (*value, *value),
+        })
+        .reduce(|(a, b), (c, d)| (a + c, b + d))
+        .unwrap();
 
       if excess > max
         && value.checked_sub(target).unwrap()
@@ -601,7 +626,11 @@ impl TransactionBuilder {
   }
 
   fn build(self) -> Result<Transaction> {
-    let recipient: Vec<Script> = self.recipient.iter().map(|recipient| recipient.script_pubkey()).collect();
+    let recipient: Vec<Script> = self
+      .recipient
+      .iter()
+      .map(|recipient| recipient.script_pubkey())
+      .collect();
     let transaction = Transaction {
       version: 1,
       lock_time: PackedLockTime::ZERO,
@@ -727,23 +756,24 @@ impl TransactionBuilder {
             }
           }
           if output.script_pubkey == self.recipient[0].script_pubkey() {
-          assert_eq!(
-            offset, sat_offset,
-            "invariant: sat is at first position in first recipient output"
-          );
+            assert_eq!(
+              offset, sat_offset,
+              "invariant: sat is at first position in first recipient output"
+            );
           }
         } else if self.alignment.is_none()
-        || (self.alignment.is_some()
-          && output.script_pubkey != self.alignment.as_ref().unwrap().script_pubkey()) {
+          || (self.alignment.is_some()
+            && output.script_pubkey != self.alignment.as_ref().unwrap().script_pubkey())
+        {
           assert!(
             self
               .change_addresses
               .iter()
-              .any(|change_address| change_address.script_pubkey() == output.script_pubkey) ||
-            self
-              .recipient
-              .iter()
-              .any(|recipient| recipient.script_pubkey() == output.script_pubkey),
+              .any(|change_address| change_address.script_pubkey() == output.script_pubkey)
+              || self
+                .recipient
+                .iter()
+                .any(|recipient| recipient.script_pubkey() == output.script_pubkey),
             "invariant: all outputs are either change or recipient: unrecognized output {}",
             output.script_pubkey
           );
@@ -880,7 +910,7 @@ mod tests {
       vec![Target::Postage],
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
       TransactionBuilder::DEFAULT_MAX_POSTAGE,
-   )
+    )
     .unwrap()
     .select_outgoing()
     .unwrap();
@@ -1110,7 +1140,10 @@ mod tests {
         input: vec![tx_in(outpoint(1)), tx_in(outpoint(2))],
         output: vec![
           tx_out(4_950, change(1)),
-          tx_out(TransactionBuilder::DEFAULT_TARGET_POSTAGE.to_sat(), recipient()),
+          tx_out(
+            TransactionBuilder::DEFAULT_TARGET_POSTAGE.to_sat(),
+            recipient()
+          ),
           tx_out(14_831, change(0)),
         ],
       })
@@ -1258,7 +1291,10 @@ mod tests {
         lock_time: PackedLockTime::ZERO,
         input: vec![tx_in(outpoint(1))],
         output: vec![
-          tx_out(TransactionBuilder::DEFAULT_TARGET_POSTAGE.to_sat(), recipient()),
+          tx_out(
+            TransactionBuilder::DEFAULT_TARGET_POSTAGE.to_sat(),
+            recipient()
+          ),
           tx_out(989_870, change(1))
         ],
       })

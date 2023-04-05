@@ -55,13 +55,15 @@ pub(crate) struct Inscribe {
   pub(crate) destination: Option<Address>,
   #[clap(long, help = "Send any alignment output to <ALIGNMENT>.")]
   pub(crate) alignment: Option<Address>,
-  #[clap(long, help = "Amount of postage to include in the inscription. Default `10000 sats`")]
+  #[clap(
+    long,
+    help = "Amount of postage to include in the inscription. Default `10000 sats`"
+  )]
   pub(crate) postage: Option<Amount>,
 }
 
 impl Inscribe {
   pub(crate) fn run(self, options: Options) -> Result {
-
     let mut inscription = Vec::new();
     for file in self.files {
       inscription.push(Inscription::from_file(options.chain(), file)?);
@@ -120,15 +122,24 @@ impl Inscribe {
       );
     }
 
-    let fees =
-      Self::calculate_fee(&unsigned_commit_tx, &utxos) + reveal_txs.iter().map(|reveal_tx| Self::calculate_fee(&reveal_tx, &utxos)).sum::<u64>();
+    let fees = Self::calculate_fee(&unsigned_commit_tx, &utxos)
+      + reveal_txs
+        .iter()
+        .map(|reveal_tx| Self::calculate_fee(&reveal_tx, &utxos))
+        .sum::<u64>();
 
     if self.dry_run {
       print_json(Output {
         satpoint,
         commit: unsigned_commit_tx.txid(),
-        reveals: reveal_txs.iter().map(|reveal_tx| reveal_tx.txid()).collect(),
-        inscriptions: reveal_txs.iter().map(|reveal_tx| reveal_tx.txid().into()).collect(),
+        reveals: reveal_txs
+          .iter()
+          .map(|reveal_tx| reveal_tx.txid())
+          .collect(),
+        inscriptions: reveal_txs
+          .iter()
+          .map(|reveal_tx| reveal_tx.txid().into())
+          .collect(),
         fees,
       })?;
     } else {
@@ -272,7 +283,10 @@ impl Inscribe {
         .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
         .expect("should compute control block");
 
-      commit_tx_addresses.push(Address::p2tr_tweaked(taproot_spend_info.output_key(), network));
+      commit_tx_addresses.push(Address::p2tr_tweaked(
+        taproot_spend_info.output_key(),
+        network,
+      ));
       taproot_spend_infos.push(taproot_spend_info);
 
       let (_, reveal_fee) = Self::build_reveal_transaction(
@@ -304,7 +318,14 @@ impl Inscribe {
     let mut reveal_txs = Vec::new();
     let mut recovery_key_pairs = Vec::new();
 
-    for ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address) in control_blocks.iter().zip(reveal_scripts).zip(key_pairs).zip(taproot_spend_infos).zip(commit_tx_addresses) {
+    for ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address) in
+      control_blocks
+        .iter()
+        .zip(reveal_scripts)
+        .zip(key_pairs)
+        .zip(taproot_spend_infos)
+        .zip(commit_tx_addresses)
+    {
       let (vout, output) = unsigned_commit_tx
         .output
         .iter()
@@ -461,21 +482,22 @@ mod tests {
     let commit_address = change(0);
     let reveal_address = recipient();
 
-    let (_satpoint, commit_tx, reveal_tx, _private_key) = Inscribe::create_inscription_transactions(
-      Some(satpoint(1, 0)),
-      vec![inscription],
-      BTreeMap::new(),
-      Network::Bitcoin,
-      utxos.into_iter().collect(),
-      [commit_address, change(1)],
-      reveal_address,
-      None,
-      FeeRate::try_from(1.0).unwrap(),
-      FeeRate::try_from(1.0).unwrap(),
-      false,
-      TransactionBuilder::DEFAULT_TARGET_POSTAGE,
-    )
-    .unwrap();
+    let (_satpoint, commit_tx, reveal_tx, _private_key) =
+      Inscribe::create_inscription_transactions(
+        Some(satpoint(1, 0)),
+        vec![inscription],
+        BTreeMap::new(),
+        Network::Bitcoin,
+        utxos.into_iter().collect(),
+        [commit_address, change(1)],
+        reveal_address,
+        None,
+        FeeRate::try_from(1.0).unwrap(),
+        FeeRate::try_from(1.0).unwrap(),
+        false,
+        TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      )
+      .unwrap();
 
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_sign_loss)]
@@ -613,21 +635,22 @@ mod tests {
     let reveal_address = recipient();
     let fee_rate = 3.3;
 
-    let (_satpoint, commit_tx, reveal_tx, _private_key) = Inscribe::create_inscription_transactions(
-      satpoint,
-      vec![inscription],
-      inscriptions,
-      bitcoin::Network::Signet,
-      utxos.into_iter().collect(),
-      [commit_address, change(1)],
-      reveal_address,
-      None,
-      FeeRate::try_from(fee_rate).unwrap(),
-      FeeRate::try_from(fee_rate).unwrap(),
-      false,
-      TransactionBuilder::DEFAULT_TARGET_POSTAGE,
-    )
-    .unwrap();
+    let (_satpoint, commit_tx, reveal_tx, _private_key) =
+      Inscribe::create_inscription_transactions(
+        satpoint,
+        vec![inscription],
+        inscriptions,
+        bitcoin::Network::Signet,
+        utxos.into_iter().collect(),
+        [commit_address, change(1)],
+        reveal_address,
+        None,
+        FeeRate::try_from(fee_rate).unwrap(),
+        FeeRate::try_from(fee_rate).unwrap(),
+        false,
+        TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      )
+      .unwrap();
 
     let sig_vbytes = 17.0;
     let fee = FeeRate::try_from(fee_rate)
@@ -677,21 +700,22 @@ mod tests {
     let commit_fee_rate = 3.3;
     let fee_rate = 1.0;
 
-    let (_satpoint, commit_tx, reveal_tx, _private_key) = Inscribe::create_inscription_transactions(
-      satpoint,
-      vec![inscription],
-      inscriptions,
-      bitcoin::Network::Signet,
-      utxos.into_iter().collect(),
-      [commit_address, change(1)],
-      reveal_address,
-      None,
-      FeeRate::try_from(commit_fee_rate).unwrap(),
-      FeeRate::try_from(fee_rate).unwrap(),
-      false,
-      TransactionBuilder::DEFAULT_TARGET_POSTAGE,
-    )
-    .unwrap();
+    let (_satpoint, commit_tx, reveal_tx, _private_key) =
+      Inscribe::create_inscription_transactions(
+        satpoint,
+        vec![inscription],
+        inscriptions,
+        bitcoin::Network::Signet,
+        utxos.into_iter().collect(),
+        [commit_address, change(1)],
+        reveal_address,
+        None,
+        FeeRate::try_from(commit_fee_rate).unwrap(),
+        FeeRate::try_from(fee_rate).unwrap(),
+        false,
+        TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      )
+      .unwrap();
 
     let sig_vbytes = 17.0;
     let fee = FeeRate::try_from(commit_fee_rate)
@@ -761,21 +785,22 @@ mod tests {
     let commit_address = change(0);
     let reveal_address = recipient();
 
-    let (_satpoint, _commit_tx, reveal_tx, _private_key) = Inscribe::create_inscription_transactions(
-      satpoint,
-      vec![inscription],
-      BTreeMap::new(),
-      Network::Bitcoin,
-      utxos.into_iter().collect(),
-      [commit_address, change(1)],
-      reveal_address,
-      None,
-      FeeRate::try_from(1.0).unwrap(),
-      FeeRate::try_from(1.0).unwrap(),
-      true,
-      TransactionBuilder::DEFAULT_TARGET_POSTAGE,
-    )
-    .unwrap();
+    let (_satpoint, _commit_tx, reveal_tx, _private_key) =
+      Inscribe::create_inscription_transactions(
+        satpoint,
+        vec![inscription],
+        BTreeMap::new(),
+        Network::Bitcoin,
+        utxos.into_iter().collect(),
+        [commit_address, change(1)],
+        reveal_address,
+        None,
+        FeeRate::try_from(1.0).unwrap(),
+        FeeRate::try_from(1.0).unwrap(),
+        true,
+        TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      )
+      .unwrap();
 
     assert!(reveal_tx[0].size() >= MAX_STANDARD_TX_WEIGHT as usize);
   }
