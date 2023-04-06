@@ -83,6 +83,7 @@ impl Preview {
           no_backup: true,
           satpoint: None,
           dry_run: false,
+          dump: false,
           no_limit: false,
           destination: None,
         },

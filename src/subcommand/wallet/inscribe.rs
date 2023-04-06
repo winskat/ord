@@ -15,6 +15,7 @@ use {
   },
   bitcoincore_rpc::bitcoincore_rpc_json::{ImportDescriptors, Timestamp},
   bitcoincore_rpc::Client,
+  bitcoincore_rpc::RawTx,
   std::collections::BTreeSet,
 };
 
@@ -23,6 +24,14 @@ struct Output {
   commit: Txid,
   inscriptions: Vec<InscriptionId>,
   reveals: Vec<Txid>,
+  fees: u64,
+}
+
+#[derive(Serialize)]
+struct OutputDump {
+  inscriptions: Vec<InscriptionId>,
+  commit: String,
+  reveals: Vec<String>,
   fees: u64,
 }
 
@@ -48,13 +57,14 @@ pub(crate) struct Inscribe {
   pub(crate) no_limit: bool,
   #[clap(long, help = "Don't sign or broadcast transactions.")]
   pub(crate) dry_run: bool,
+  #[clap(long, help = "Dump raw hex transactions instead of sending them.")]
+  pub(crate) dump: bool,
   #[clap(long, help = "Send inscription to <DESTINATION>.")]
   pub(crate) destination: Option<Address>,
 }
 
 impl Inscribe {
   pub(crate) fn run(self, options: Options) -> Result {
-
     let mut inscription = Vec::new();
     for file in self.files {
       inscription.push(Inscription::from_file(options.chain(), file)?);
@@ -99,46 +109,74 @@ impl Inscribe {
       );
     }
 
-    let fees =
-      Self::calculate_fee(&unsigned_commit_tx, &utxos) + reveal_txs.iter().map(|reveal_tx| Self::calculate_fee(&reveal_tx, &utxos)).sum::<u64>();
+    let fees = Self::calculate_fee(&unsigned_commit_tx, &utxos)
+      + reveal_txs
+        .iter()
+        .map(|reveal_tx| Self::calculate_fee(&reveal_tx, &utxos))
+        .sum::<u64>();
 
     if self.dry_run {
       print_json(Output {
         commit: unsigned_commit_tx.txid(),
-        reveals: reveal_txs.iter().map(|reveal_tx| reveal_tx.txid()).collect(),
-        inscriptions: reveal_txs.iter().map(|reveal_tx| reveal_tx.txid().into()).collect(),
+        reveals: reveal_txs
+          .iter()
+          .map(|reveal_tx| reveal_tx.txid())
+          .collect(),
+        inscriptions: reveal_txs
+          .iter()
+          .map(|reveal_tx| reveal_tx.txid().into())
+          .collect(),
         fees,
       })?;
     } else {
-      if !self.no_backup {
-        for recovery_key_pair in recovery_key_pairs {
-          Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
-        }
-      }
-
       let signed_raw_commit_tx = client
         .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
         .hex;
 
-      let commit = client
-        .send_raw_transaction(&signed_raw_commit_tx)
-        .context("Failed to send commit transaction")?;
+      if self.dump {
+        let commit = signed_raw_commit_tx.raw_hex();
 
-      let mut reveals = Vec::new();
-      for reveal_tx in reveal_txs {
-        let reveal = client
-          .send_raw_transaction(&reveal_tx)
-          .context("Failed to send reveal transaction")?;
-        reveals.push(reveal);
+        let mut reveals = Vec::new();
+        let mut inscriptions = Vec::new();
+        for reveal_tx in reveal_txs {
+          reveals.push(reveal_tx.raw_hex());
+          inscriptions.push(reveal_tx.txid().into());
+        }
+
+        print_json(OutputDump {
+          commit,
+          inscriptions,
+          reveals,
+          fees,
+        })?;
+      } else {
+        if !self.no_backup {
+          for recovery_key_pair in recovery_key_pairs {
+            Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
+          }
+        }
+
+        let commit = client
+          .send_raw_transaction(&signed_raw_commit_tx)
+          .context("Failed to send commit transaction")?;
+
+        let mut reveals = Vec::new();
+        for reveal_tx in reveal_txs {
+          reveals.push(
+            client
+              .send_raw_transaction(&reveal_tx)
+              .context("Failed to send reveal transaction")?,
+          );
+        }
+
+        print_json(Output {
+          commit,
+          reveals: reveals.iter().map(|reveal| *reveal).collect(),
+          inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
+          fees,
+        })?;
       }
-
-      print_json(Output {
-        commit,
-        reveals: reveals.iter().map(|reveal| *reveal).collect(),
-        inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
-        fees,
-      })?;
-    };
+    }
 
     Ok(())
   }
@@ -224,7 +262,10 @@ impl Inscribe {
         .control_block(&(reveal_script.clone(), LeafVersion::TapScript))
         .expect("should compute control block");
 
-      commit_tx_addresses.push(Address::p2tr_tweaked(taproot_spend_info.output_key(), network));
+      commit_tx_addresses.push(Address::p2tr_tweaked(
+        taproot_spend_info.output_key(),
+        network,
+      ));
       taproot_spend_infos.push(taproot_spend_info);
 
       let (_, reveal_fee) = Self::build_reveal_transaction(
@@ -255,7 +296,14 @@ impl Inscribe {
     let mut reveal_txs = Vec::new();
     let mut recovery_key_pairs = Vec::new();
 
-    for ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address) in control_blocks.iter().zip(reveal_scripts).zip(key_pairs).zip(taproot_spend_infos).zip(commit_tx_addresses) {
+    for ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address) in
+      control_blocks
+        .iter()
+        .zip(reveal_scripts)
+        .zip(key_pairs)
+        .zip(taproot_spend_infos)
+        .zip(commit_tx_addresses)
+    {
       let (vout, output) = unsigned_commit_tx
         .output
         .iter()
