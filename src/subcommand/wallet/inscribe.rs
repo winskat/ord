@@ -19,6 +19,11 @@ use {
   std::collections::BTreeSet,
 };
 
+#[derive(Deserialize)]
+pub struct DecodeRawTransactionOutput {
+  pub weight: u64,
+}
+
 #[derive(Serialize)]
 struct OutputDump {
   inscriptions: Vec<InscriptionId>,
@@ -87,6 +92,7 @@ impl Inscribe {
       .map(Ok)
       .unwrap_or_else(|| get_change_address(&client))?;
 
+    tprintln!("[create_inscription_transactions]");
     let (unsigned_commit_tx, reveal_txs, recovery_key_pairs) =
       Inscribe::create_inscription_transactions(
         self.satpoint,
@@ -101,6 +107,21 @@ impl Inscribe {
         self.no_limit,
       )?;
 
+    tprintln!("[sign commit]");
+    let signed_raw_commit_tx = client
+      .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
+      .hex;
+
+    if !self.no_limit {
+      let commit_weight = client.call::<DecodeRawTransactionOutput>("decoderawtransaction", &[signed_raw_commit_tx.raw_hex().into()],)?.weight;
+      if commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
+        bail!(
+          "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
+        );
+      }
+    }
+
+    tprintln!("[insert values]");
     for reveal_tx in reveal_txs.clone() {
       utxos.insert(
         reveal_tx.input[0].previous_output,
@@ -129,57 +150,52 @@ impl Inscribe {
           .collect(),
         fees,
       })?;
-    } else {
-      let signed_raw_commit_tx = client
-        .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
-        .hex;
+    } else if self.dump {
+      let commit = signed_raw_commit_tx.raw_hex();
 
-      if self.dump {
-        let commit = signed_raw_commit_tx.raw_hex();
-
-        let mut reveals = Vec::new();
-        let mut inscriptions = Vec::new();
-        for reveal_tx in reveal_txs {
-          reveals.push(reveal_tx.raw_hex());
-          inscriptions.push(reveal_tx.txid().into());
-        }
-
-        let recovery_descriptors = recovery_key_pairs.iter().map(|recovery_key_pair| Inscribe::get_recovery_key(&client, *recovery_key_pair, options.chain().network()).unwrap()).collect();
-
-        print_json(OutputDump {
-          inscriptions,
-          commit,
-          reveals,
-          recovery_descriptors,
-          fees,
-        })?;
-      } else {
-        if !self.no_backup {
-          for recovery_key_pair in recovery_key_pairs {
-            Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
-          }
-        }
-
-        let commit = client
-          .send_raw_transaction(&signed_raw_commit_tx)
-          .context("Failed to send commit transaction")?;
-
-        let mut reveals = Vec::new();
-        for reveal_tx in reveal_txs {
-          reveals.push(
-            client
-              .send_raw_transaction(&reveal_tx)
-              .context("Failed to send reveal transaction")?,
-          );
-        }
-
-        print_json(Output {
-          inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
-          commit,
-          reveals: reveals.iter().map(|reveal| *reveal).collect(),
-          fees,
-        })?;
+      let mut reveals = Vec::new();
+      let mut inscriptions = Vec::new();
+      for reveal_tx in reveal_txs {
+        reveals.push(reveal_tx.raw_hex());
+        inscriptions.push(reveal_tx.txid().into());
       }
+
+      tprintln!("[recovery pairs]");
+      let recovery_descriptors = recovery_key_pairs.iter().map(|recovery_key_pair| Inscribe::get_recovery_key(&client, *recovery_key_pair, options.chain().network()).unwrap()).collect();
+
+      print_json(OutputDump {
+        inscriptions,
+        commit,
+        reveals,
+        recovery_descriptors,
+        fees,
+      })?;
+    } else {
+      if !self.no_backup {
+        for recovery_key_pair in recovery_key_pairs {
+          Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
+        }
+      }
+
+      let commit = client
+        .send_raw_transaction(&signed_raw_commit_tx)
+        .context("Failed to send commit transaction")?;
+
+      let mut reveals = Vec::new();
+      for reveal_tx in reveal_txs {
+        reveals.push(
+          client
+            .send_raw_transaction(&reveal_tx)
+            .context("Failed to send reveal transaction")?,
+        );
+      }
+
+      print_json(Output {
+        inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
+        commit,
+        reveals: reveals.iter().map(|reveal| *reveal).collect(),
+        fees,
+      })?;
     }
 
     Ok(())
@@ -244,6 +260,7 @@ impl Inscribe {
     let mut key_pairs = Vec::new();
     let mut taproot_spend_infos = Vec::new();
 
+    tprintln!("[make reveals]");
     for inscription in inscription {
       let secp256k1 = Secp256k1::new();
       let key_pair = UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng());
@@ -287,6 +304,7 @@ impl Inscribe {
       reveal_fees.push(reveal_fee + TransactionBuilder::TARGET_POSTAGE);
     }
 
+    tprintln!("[make commit]");
     let unsigned_commit_tx = TransactionBuilder::build_transaction_with_values(
       satpoint,
       inscriptions,
@@ -300,6 +318,8 @@ impl Inscribe {
     let mut reveal_txs = Vec::new();
     let mut recovery_key_pairs = Vec::new();
 
+    tprintln!("[remake reveals]");
+    let mut n = 0;
     for ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address) in
       control_blocks
         .iter()
@@ -382,6 +402,10 @@ impl Inscribe {
         bail!(
           "reveal transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {reveal_weight}"
         );
+      }
+      n += 1;
+      if n % 100 == 0 {
+        tprintln!("  [{n}]");
       }
     }
 
