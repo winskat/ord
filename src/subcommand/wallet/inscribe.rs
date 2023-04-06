@@ -20,20 +20,21 @@ use {
 };
 
 #[derive(Serialize)]
-struct Output {
-  satpoint: SatPoint,
-  commit: Txid,
-  inscriptions: Vec<InscriptionId>,
-  reveals: Vec<Txid>,
-  fees: u64,
-}
-
-#[derive(Serialize)]
 struct OutputDump {
   satpoint: SatPoint,
   inscriptions: Vec<InscriptionId>,
   commit: String,
   reveals: Vec<String>,
+  recovery_descriptors: Vec<String>,
+  fees: u64,
+}
+
+#[derive(Serialize)]
+struct Output {
+  satpoint: SatPoint,
+  inscriptions: Vec<InscriptionId>,
+  commit: Txid,
+  reveals: Vec<Txid>,
   fees: u64,
 }
 
@@ -143,14 +144,14 @@ impl Inscribe {
     if self.dry_run {
       print_json(Output {
         satpoint,
+        inscriptions: reveal_txs
+          .iter()
+          .map(|reveal_tx| reveal_tx.txid().into())
+          .collect(),
         commit: unsigned_commit_tx.txid(),
         reveals: reveal_txs
           .iter()
           .map(|reveal_tx| reveal_tx.txid())
-          .collect(),
-        inscriptions: reveal_txs
-          .iter()
-          .map(|reveal_tx| reveal_tx.txid().into())
           .collect(),
         fees,
       })?;
@@ -169,11 +170,14 @@ impl Inscribe {
           inscriptions.push(reveal_tx.txid().into());
         }
 
+        let recovery_descriptors = recovery_key_pairs.iter().map(|recovery_key_pair| Inscribe::get_recovery_key(&client, *recovery_key_pair, options.chain().network()).unwrap()).collect();
+
         print_json(OutputDump {
           satpoint,
-          commit,
           inscriptions,
+          commit,
           reveals,
+          recovery_descriptors,
           fees,
         })?;
       } else {
@@ -198,9 +202,9 @@ impl Inscribe {
 
         print_json(Output {
           satpoint,
+          inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
           commit,
           reveals: reveals.iter().map(|reveal| *reveal).collect(),
-          inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
           fees,
         })?;
       }
@@ -438,17 +442,24 @@ impl Inscribe {
     Ok((satpoint, unsigned_commit_tx, reveal_txs, recovery_key_pairs))
   }
 
+  fn get_recovery_key(
+    client: &Client,
+    recovery_key_pair: TweakedKeyPair,
+    network: Network,
+  ) -> Result<String> {
+    let recovery_private_key = PrivateKey::new(recovery_key_pair.to_inner().secret_key(), network).to_wif();
+    Ok(format!("rawtr({})#{}", recovery_private_key, client.get_descriptor_info(&format!("rawtr({})", recovery_private_key))?.checksum))
+  }
+
   fn backup_recovery_key(
     client: &Client,
     recovery_key_pair: TweakedKeyPair,
     network: Network,
   ) -> Result {
-    let recovery_private_key = PrivateKey::new(recovery_key_pair.to_inner().secret_key(), network);
-
-    let info = client.get_descriptor_info(&format!("rawtr({})", recovery_private_key.to_wif()))?;
+    let descriptor = Self::get_recovery_key(client, recovery_key_pair, network)?;
 
     let response = client.import_descriptors(ImportDescriptors {
-      descriptor: format!("rawtr({})#{}", recovery_private_key.to_wif(), info.checksum),
+      descriptor,
       timestamp: Timestamp::Now,
       active: Some(false),
       range: None,
