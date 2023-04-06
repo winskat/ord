@@ -15,6 +15,7 @@ use {
   },
   bitcoincore_rpc::bitcoincore_rpc_json::{ImportDescriptors, Timestamp},
   bitcoincore_rpc::Client,
+  bitcoincore_rpc::RawTx,
   std::collections::BTreeSet,
 };
 
@@ -24,6 +25,15 @@ struct Output {
   commit: Txid,
   inscriptions: Vec<InscriptionId>,
   reveals: Vec<Txid>,
+  fees: u64,
+}
+
+#[derive(Serialize)]
+struct OutputDump {
+  satpoint: SatPoint,
+  inscriptions: Vec<InscriptionId>,
+  commit: String,
+  reveals: Vec<String>,
   fees: u64,
 }
 
@@ -51,6 +61,8 @@ pub(crate) struct Inscribe {
   pub(crate) no_limit: bool,
   #[clap(long, help = "Don't sign or broadcast transactions.")]
   pub(crate) dry_run: bool,
+  #[clap(long, help = "Dump raw hex transactions instead of sending them.")]
+  pub(crate) dump: bool,
   #[clap(long, help = "Send inscription to <DESTINATION>.")]
   pub(crate) destination: Option<Address>,
   #[clap(long, help = "Send any alignment output to <ALIGNMENT>.")]
@@ -143,36 +155,56 @@ impl Inscribe {
         fees,
       })?;
     } else {
-      if !self.no_backup {
-        for recovery_key_pair in recovery_key_pairs {
-          Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
-        }
-      }
-
       let signed_raw_commit_tx = client
         .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
         .hex;
 
-      let commit = client
-        .send_raw_transaction(&signed_raw_commit_tx)
-        .context("Failed to send commit transaction")?;
+      if self.dump {
+        let commit = signed_raw_commit_tx.raw_hex();
 
-      let mut reveals = Vec::new();
-      for reveal_tx in reveal_txs {
-        let reveal = client
-          .send_raw_transaction(&reveal_tx)
-          .context("Failed to send reveal transaction")?;
-        reveals.push(reveal);
+        let mut reveals = Vec::new();
+        let mut inscriptions = Vec::new();
+        for reveal_tx in reveal_txs {
+          reveals.push(reveal_tx.raw_hex());
+          inscriptions.push(reveal_tx.txid().into());
+        }
+
+        print_json(OutputDump {
+          satpoint,
+          commit,
+          inscriptions,
+          reveals,
+          fees,
+        })?;
+      } else {
+        if !self.no_backup {
+          for recovery_key_pair in recovery_key_pairs {
+            Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
+          }
+        }
+
+        let commit = client
+          .send_raw_transaction(&signed_raw_commit_tx)
+          .context("Failed to send commit transaction")?;
+
+        let mut reveals = Vec::new();
+        for reveal_tx in reveal_txs {
+          reveals.push(
+            client
+              .send_raw_transaction(&reveal_tx)
+              .context("Failed to send reveal transaction")?,
+          );
+        }
+
+        print_json(Output {
+          satpoint,
+          commit,
+          reveals: reveals.iter().map(|reveal| *reveal).collect(),
+          inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
+          fees,
+        })?;
       }
-
-      print_json(Output {
-        satpoint,
-        commit,
-        reveals: reveals.iter().map(|reveal| *reveal).collect(),
-        inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
-        fees,
-      })?;
-    };
+    }
 
     Ok(())
   }
