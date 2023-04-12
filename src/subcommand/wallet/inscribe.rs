@@ -47,7 +47,10 @@ struct Output {
 pub(crate) struct Inscribe {
   #[clap(long, help = "Inscribe <SATPOINT>")]
   pub(crate) satpoint: Option<SatPoint>,
-  #[clap(long, help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions")]
+  #[clap(
+    long,
+    help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions"
+  )]
   pub(crate) utxo: Vec<OutPoint>,
   #[clap(long, help = "Only spend outpoints given with --utxo")]
   pub(crate) coin_control: bool,
@@ -144,7 +147,12 @@ impl Inscribe {
       .hex;
 
     if !self.no_limit {
-      let commit_weight = client.call::<DecodeRawTransactionOutput>("decoderawtransaction", &[signed_raw_commit_tx.raw_hex().into()],)?.weight;
+      let commit_weight = client
+        .call::<DecodeRawTransactionOutput>(
+          "decoderawtransaction",
+          &[signed_raw_commit_tx.raw_hex().into()],
+        )?
+        .weight;
       if commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
         bail!(
           "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
@@ -193,7 +201,13 @@ impl Inscribe {
       }
 
       tprintln!("[recovery pairs]");
-      let recovery_descriptors = recovery_key_pairs.iter().map(|recovery_key_pair| Inscribe::get_recovery_key(&client, *recovery_key_pair, options.chain().network()).unwrap()).collect();
+      let recovery_descriptors = recovery_key_pairs
+        .iter()
+        .map(|recovery_key_pair| {
+          Inscribe::get_recovery_key(&client, *recovery_key_pair, options.chain().network())
+            .unwrap()
+        })
+        .collect();
 
       print_json(OutputDump {
         satpoint,
@@ -477,8 +491,15 @@ impl Inscribe {
     recovery_key_pair: TweakedKeyPair,
     network: Network,
   ) -> Result<String> {
-    let recovery_private_key = PrivateKey::new(recovery_key_pair.to_inner().secret_key(), network).to_wif();
-    Ok(format!("rawtr({})#{}", recovery_private_key, client.get_descriptor_info(&format!("rawtr({})", recovery_private_key))?.checksum))
+    let recovery_private_key =
+      PrivateKey::new(recovery_key_pair.to_inner().secret_key(), network).to_wif();
+    Ok(format!(
+      "rawtr({})#{}",
+      recovery_private_key,
+      client
+        .get_descriptor_info(&format!("rawtr({})", recovery_private_key))?
+        .checksum
+    ))
   }
 
   fn backup_recovery_key(

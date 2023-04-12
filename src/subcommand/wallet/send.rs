@@ -4,7 +4,9 @@ use {super::*, crate::wallet::Wallet};
 pub(crate) struct Send {
   address: Address,
   outgoing: Outgoing,
-  #[clap(long, help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions"
+  #[clap(
+    long,
+    help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions"
   )]
   utxo: Vec<OutPoint>,
   #[clap(
