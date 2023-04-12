@@ -6,7 +6,7 @@ Changelog
 ### Added
 - Add the inscription number and the satoshi number to the `wallet inscriptions` output.
 - Add `--no-broadcast` flag to `wallet inscribe` to prevent it broadcasting any transactions.
-- Add `--coin-control` flag to `wallet inscribe` and `wallet send` to have those commands only spent utxos given with the `--utxo` flag.
+- Add `--coin-control` flag to `wallet inscribe` and `wallet send` to have those commands only spend utxos given with the `--utxo` flag.
 - Add `decode` command to dump the contents of an inscription to a file, even if it isn't confirmed yet.
 
 ### Changed
