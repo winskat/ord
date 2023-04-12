@@ -33,9 +33,9 @@ pub(crate) struct Inscribe {
   pub(crate) satpoint: Option<SatPoint>,
   #[clap(
     long,
-    help = "Inscribe on an satpoint in an unconfirmed UTXO specified by --satpoint"
+    help = "Consider spending unconfirmed outpoint <UTXO>"
   )]
-  pub(crate) unconfirmed: bool,
+  pub(crate) utxo: Vec<OutPoint>,
   #[clap(
     long,
     default_value = "1.0",
@@ -73,13 +73,9 @@ impl Inscribe {
 
     let mut utxos = index.get_unspent_outputs(Wallet::load(&options)?)?;
 
-    if self.unconfirmed {
-      let outpoint = self
-        .satpoint
-        .ok_or_else(|| anyhow!("Specify a --satpoint with --unconfirmed"))?
-        .outpoint;
+    for outpoint in &self.utxo {
       utxos.insert(
-        outpoint,
+        *outpoint,
         Amount::from_sat(
           client.get_raw_transaction(&outpoint.txid, None)?.output[outpoint.vout as usize].value,
         ),
