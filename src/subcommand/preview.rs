@@ -81,6 +81,7 @@ impl Preview {
           commit_fee_rate: None,
           files: self.inscriptions,
           no_backup: true,
+          no_broadcast: false,
           satpoint: None,
           dry_run: false,
           dump: false,
