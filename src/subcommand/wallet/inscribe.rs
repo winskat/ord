@@ -33,9 +33,11 @@ pub(crate) struct Inscribe {
   pub(crate) satpoint: Option<SatPoint>,
   #[clap(
     long,
-    help = "Consider spending unconfirmed outpoint <UTXO>"
+    help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions"
   )]
   pub(crate) utxo: Vec<OutPoint>,
+  #[clap(long, help = "Only spend outpoints given with --utxo")]
+  pub(crate) coin_control: bool,
   #[clap(
     long,
     default_value = "1.0",
@@ -71,7 +73,11 @@ impl Inscribe {
 
     let client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
-    let mut utxos = index.get_unspent_outputs(Wallet::load(&options)?)?;
+    let mut utxos = if self.coin_control {
+      BTreeMap::new()
+    } else {
+      index.get_unspent_outputs(Wallet::load(&options)?)?
+    };
 
     for outpoint in &self.utxo {
       utxos.insert(

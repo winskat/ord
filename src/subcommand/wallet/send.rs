@@ -6,9 +6,14 @@ pub(crate) struct Send {
   outgoing: Outgoing,
   #[clap(
     long,
-    help = "Consider spending unconfirmed outpoint <UTXO>"
+    help = "Consider spending outpoint <UTXO>, even if it is unconfirmed or contains inscriptions"
   )]
   utxo: Vec<OutPoint>,
+  #[clap(
+    long,
+    help = "Only spend outpoints given with --utxo when sending inscriptions or satpoints"
+  )]
+  pub(crate) coin_control: bool,
   #[clap(long, help = "Use fee rate of <FEE_RATE> sats/vB")]
   fee_rate: FeeRate,
 }
@@ -33,14 +38,17 @@ impl Send {
 
     let client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
-    let mut unspent_outputs = index.get_unspent_outputs(Wallet::load(&options)?)?;
+    let mut unspent_outputs = if self.coin_control {
+      BTreeMap::new()
+    } else {
+      index.get_unspent_outputs(Wallet::load(&options)?)?
+    };
 
     for outpoint in &self.utxo {
       unspent_outputs.insert(
         *outpoint,
         Amount::from_sat(
-          client.get_raw_transaction(&outpoint.txid, None)?.output[outpoint.vout as usize]
-            .value,
+          client.get_raw_transaction(&outpoint.txid, None)?.output[outpoint.vout as usize].value,
         ),
       );
     }
