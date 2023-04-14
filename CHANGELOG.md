@@ -1,6 +1,11 @@
 Changelog
 =========
 
+[0.5.1-gm14](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm14) - 2023-04-14
+
+### Added
+- Add `--wait-after-commit` flag to `wallet inscribe` to have ord wait for the commit transaction to confirm before sending reveal transaction(s).
+
 [0.5.1-gm13](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm13) - 2023-04-14
 
 ### Added
