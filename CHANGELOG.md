@@ -1,6 +1,11 @@
 Changelog
 =========
 
+[0.5.1-gm13](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm13) - 2023-04-14
+
+### Added
+- Add functionality to `ord inscriptions` to list in order of inscription number, to allow it to work without the full sats index, and to allow limiting output in various ways (`--max-sat`, `-max-number`, `-max-height`. Renamed `--max` flag to `--limit`.
+
 [0.5.1-gm12](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm12) - 2023-04-12
 
 ### Added
