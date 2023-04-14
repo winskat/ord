@@ -625,7 +625,7 @@ impl Index {
       return Ok(None);
     }
 
-    if outpoints.len() == 0 {
+    if outpoints.is_empty() {
       let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
       for (key, value) in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
@@ -682,7 +682,7 @@ impl Index {
     }
 
     let mut result = Vec::new();
-    if outpoints.len() == 0 {
+    if outpoints.is_empty() {
       let mut remaining_sats = search_end - search_start;
       let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 

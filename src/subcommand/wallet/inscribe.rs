@@ -175,7 +175,7 @@ impl Inscribe {
     let fees = Self::calculate_fee(&unsigned_commit_tx, &utxos)
       + reveal_txs
         .iter()
-        .map(|reveal_tx| Self::calculate_fee(&reveal_tx, &utxos))
+        .map(|reveal_tx| Self::calculate_fee(reveal_tx, &utxos))
         .sum::<u64>();
 
     if self.dry_run {
@@ -246,7 +246,7 @@ impl Inscribe {
           satpoint,
           inscriptions: reveals.iter().map(|reveal| (*reveal).into()).collect(),
           commit,
-          reveals: reveals.iter().map(|reveal| *reveal).collect(),
+          reveals,
           fees,
         })?;
       }
@@ -416,7 +416,7 @@ impl Inscribe {
         .expect("should find sat commit/inscription output");
 
       let (mut reveal_tx, fee) = Self::build_reveal_transaction(
-        &control_block,
+        control_block,
         reveal_fee_rate,
         OutPoint {
           txid: unsigned_commit_tx.txid(),
