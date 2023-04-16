@@ -1,6 +1,6 @@
 use {
   super::*,
-  ord::subcommand::wallet::{inscriptions::Output, receive},
+  ord::subcommand::wallet::{inscriptions::OutputWithoutSat, receive},
 };
 
 #[test]
@@ -17,7 +17,7 @@ fn inscriptions() {
 
   let output = CommandBuilder::new("wallet inscriptions")
     .rpc_server(&rpc_server)
-    .output::<Vec<Output>>();
+    .output::<Vec<OutputWithoutSat>>();
 
   assert_eq!(output.len(), 1);
   assert_eq!(output[0].inscription, inscription.parse().unwrap());
@@ -44,7 +44,7 @@ fn inscriptions() {
 
   let output = CommandBuilder::new("wallet inscriptions")
     .rpc_server(&rpc_server)
-    .output::<Vec<Output>>();
+    .output::<Vec<OutputWithoutSat>>();
 
   assert_eq!(output.len(), 1);
   assert_eq!(output[0].inscription, inscription.parse().unwrap());
@@ -73,7 +73,7 @@ fn inscriptions_includes_locked_utxos() {
 
   let output = CommandBuilder::new("wallet inscriptions")
     .rpc_server(&rpc_server)
-    .output::<Vec<Output>>();
+    .output::<Vec<OutputWithoutSat>>();
 
   assert_eq!(output.len(), 1);
   assert_eq!(output[0].inscription, inscription.parse().unwrap());
