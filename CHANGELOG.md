@@ -1,6 +1,11 @@
 Changelog
 =========
 
+[0.5.1-gm16](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm16) - 2023-04-17
+
+### Changed
+- Close the index database before starting to wait for the commit tx to confirm. This allows other instances of ord to run while we're waiting.
+
 [0.5.1-gm15](https://github.com/gmart7t2/ord/releases/tag/0.5.1-gm15) - 2023-04-16
 
 ### Added
