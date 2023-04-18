@@ -238,46 +238,48 @@ impl Inscribe {
           .context("Failed to send commit transaction")?;
 
         if self.wait_after_commit {
+          let mut failed = false;
           drop(index);
           eprint!("[waiting for commit transaction {} to confirm] ", commit);
           io::stdout().flush()?;
+          drop(client);
           loop {
-            match client.get_transaction(&commit, Some(false)) {
-              Ok(tx) => {
-                if tx.info.confirmations > 0 {
-                  eprintln!();
-                  eprintln!("[confirmed]");
-                  break;
+            thread::sleep(time::Duration::from_secs(60));
+            match options.bitcoin_rpc_client_for_wallet_command(false) {
+              Ok(client) => {
+                if failed == true {
+                  eprintln!("[reconnected]");
+                  failed = false;
                 }
-                eprint!(".");
-              }
-              Err(error) => {
-                eprintln!();
-                eprintln!("[error: {:?}]", error);
-                eprintln!("[trying to reconnect to bitcoin client]");
-                loop {
-                  match options.bitcoin_rpc_client_for_wallet_command(false) {
-                    Ok(c) => {
-                      client = c;
-                      eprintln!("[reconnected to bitcoin client]");
-                      eprintln!("[continuing to wait for commit transaction {} to confirm]", commit);
+
+                match client.get_transaction(&commit, Some(false)) {
+                  Ok(tx) => {
+                    if tx.info.confirmations > 0 {
+                      eprintln!();
+                      eprintln!("[confirmed]");
                       break;
                     }
-                    Err(error) => {
-                      eprintln!("[failed to connect to bitcoin client: {:?}]", error);
-                      thread::sleep(time::Duration::from_secs(60));
-                    }
+                    eprint!(".");
+                  }
+                  Err(error) => {
+                    eprintln!();
+                    eprintln!("[error: {:?}]", error);
+                    eprintln!("[trying to reconnect to bitcoin client]");
+                    failed = true;
                   }
                 }
               }
+              Err(error) => {
+                eprintln!();
+                eprintln!("[failed to connect to bitcoin client: {:?}]", error);
+                failed = true;
+                thread::sleep(time::Duration::from_secs(60));
+              }
             }
-            io::stdout().flush()?;
-            drop(client);
-            thread::sleep(time::Duration::from_secs(60));
-            client = options.bitcoin_rpc_client_for_wallet_command(false)?;
           }
         }
 
+        client = options.bitcoin_rpc_client_for_wallet_command(false)?;
         let mut reveals = Vec::new();
         for reveal_tx in reveal_txs {
           reveals.push(
