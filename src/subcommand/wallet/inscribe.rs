@@ -101,7 +101,7 @@ impl Inscribe {
     let index = Index::open(&options)?;
     index.update()?;
 
-    let client = options.bitcoin_rpc_client_for_wallet_command(false)?;
+    let mut client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
     let mut utxos = if self.coin_control {
       BTreeMap::new()
@@ -239,19 +239,41 @@ impl Inscribe {
 
         if self.wait_after_commit {
           drop(index);
-          eprint!("waiting for commit transaction {} to confirm ", commit);
+          eprint!("[waiting for commit transaction {} to confirm] ", commit);
           io::stdout().flush()?;
           loop {
-            thread::sleep(time::Duration::from_secs(3));
-            let confirmations = client.get_transaction(&commit, Some(false))?.info.confirmations;
-            eprint!(".");
-            io::stdout().flush()?;
-            if confirmations > 0 {
-              break;
+            match client.get_transaction(&commit, Some(false)) {
+              Ok(tx) => {
+                if tx.info.confirmations > 0 {
+                  eprintln!();
+                  eprintln!("[confirmed]");
+                  break;
+                }
+                eprint!(".");
+              }
+              Err(error) => {
+                eprintln!();
+                eprintln!("[error: {:?}]", error);
+                eprintln!("[trying to reconnect to bitcoin client]");
+                loop {
+                  match options.bitcoin_rpc_client_for_wallet_command(false) {
+                    Ok(c) => {
+                      client = c;
+                      eprintln!("[reconnected to bitcoin client]");
+                      eprintln!("[continuing to wait for commit transaction {} to confirm]", commit);
+                      break;
+                    }
+                    Err(error) => {
+                      eprintln!("[failed to connect to bitcoin client: {:?}]", error);
+                      thread::sleep(time::Duration::from_secs(15));
+                    }
+                  }
+                }
+              }
             }
+            io::stdout().flush()?;
+            thread::sleep(time::Duration::from_secs(5));
           }
-          eprintln!();
-          eprintln!("confirmed");
         }
 
         let mut reveals = Vec::new();
