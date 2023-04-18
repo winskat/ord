@@ -268,14 +268,16 @@ impl Inscribe {
                     }
                     Err(error) => {
                       eprintln!("[failed to connect to bitcoin client: {:?}]", error);
-                      thread::sleep(time::Duration::from_secs(15));
+                      thread::sleep(time::Duration::from_secs(60));
                     }
                   }
                 }
               }
             }
             io::stdout().flush()?;
-            thread::sleep(time::Duration::from_secs(5));
+            drop(client);
+            thread::sleep(time::Duration::from_secs(60));
+            client = options.bitcoin_rpc_client_for_wallet_command(false)?;
           }
         }
 
