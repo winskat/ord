@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.5.2-gm1](https://github.com/casey/ord/releases/tag/0.5.2-gm1) - 2023-04-19
+-----------------------------------------------------------------------------
+
+### Added
+- Add `--id` and `--number` flags to `ord inscriptions` to list specific inscriptions by inscriptionid or by inscription number.
+
 [0.5.2](https://github.com/casey/ord/releases/tag/0.5.2) - 2023-04-17
 ---------------------------------------------------------------------
 
