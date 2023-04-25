@@ -17,10 +17,10 @@ use {
   bitcoincore_rpc::Client,
   bitcoincore_rpc::RawTx,
   std::collections::BTreeSet,
-  std::{thread, time},
-  std::io::Write,
   std::fs::File,
-  std::io::{BufReader, BufRead},
+  std::io::Write,
+  std::io::{BufRead, BufReader},
+  std::{thread, time},
 };
 
 #[derive(Deserialize)]
@@ -71,7 +71,10 @@ pub(crate) struct Inscribe {
   pub(crate) no_backup: bool,
   #[clap(long, help = "Do not broadcast any transactions.")]
   pub(crate) no_broadcast: bool,
-  #[clap(long, help = "Wait for the commit tx to confirm before sending reveal txs.")]
+  #[clap(
+    long,
+    help = "Wait for the commit tx to confirm before sending reveal txs."
+  )]
   pub(crate) wait_after_commit: bool,
   #[clap(
     long,
@@ -91,7 +94,10 @@ pub(crate) struct Inscribe {
     help = "Amount of postage to include in the inscription. Default `10000 sats`"
   )]
   pub(crate) postage: Option<Amount>,
-  #[clap(long, help = "Use at most <MAX_INPUTS> inputs to build the commit transaction.")]
+  #[clap(
+    long,
+    help = "Use at most <MAX_INPUTS> inputs to build the commit transaction."
+  )]
   pub(crate) max_inputs: Option<usize>,
   #[clap(long, help = "Location of a CSV file to use for a combination of DESTINATION and FILE NAMES.  Should be structured `destination,file`.")]
   pub(crate) destination_csv: Option<PathBuf>,
@@ -266,13 +272,13 @@ impl Inscribe {
         })?;
       }
 
-      if !self.no_broadcast {
-        if !self.no_backup {
-          for recovery_key_pair in recovery_key_pairs {
-            Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
-          }
+      if !self.no_backup {
+        for recovery_key_pair in recovery_key_pairs {
+          Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
         }
+      }
 
+      if !self.no_broadcast {
         let commit = client
           .send_raw_transaction(&signed_raw_commit_tx)
           .context("Failed to send commit transaction")?;
@@ -287,7 +293,7 @@ impl Inscribe {
             thread::sleep(time::Duration::from_secs(60));
             match options.bitcoin_rpc_client_for_wallet_command(false) {
               Ok(client) => {
-                if failed == true {
+                if failed {
                   eprintln!("[reconnected]");
                   failed = false;
                 }
@@ -696,7 +702,7 @@ mod tests {
         None,
         FeeRate::try_from(1.0).unwrap(),
         FeeRate::try_from(1.0).unwrap(),
-      None,
+        None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
       )
