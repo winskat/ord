@@ -99,7 +99,10 @@ pub(crate) struct Inscribe {
     help = "Use at most <MAX_INPUTS> inputs to build the commit transaction."
   )]
   pub(crate) max_inputs: Option<usize>,
-  #[clap(long, help = "Location of a CSV file to use for a combination of DESTINATION and FILE NAMES.  Should be structured `destination,file`.")]
+  #[clap(
+    long,
+    help = "Location of a CSV file to use for a combination of DESTINATION and FILE NAMES.  Should be structured `destination,file`."
+  )]
   pub(crate) destination_csv: Option<PathBuf>,
 }
 
@@ -111,11 +114,14 @@ impl Inscribe {
     let mut client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
     if let Some(destination_csv) = self.destination_csv {
-
       if !self.files.is_empty() {
-        return Err(anyhow!("Cannot use both --destination-csv and provide files"));
-      } else if let Some(_) = self.destination {
-        return Err(anyhow!("Cannot use both --destination-csv and --destination"));
+        return Err(anyhow!(
+          "Cannot use both --destination-csv and provide files"
+        ));
+      } else if self.destination.is_some() {
+        return Err(anyhow!(
+          "Cannot use both --destination-csv and --destination"
+        ));
       }
 
       let destination_csv_ref = &destination_csv;
@@ -125,13 +131,13 @@ impl Inscribe {
         let line = line?;
         let mut split = line.split(',');
         let destination = split.next().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Destination CSV file {} is not formatted correctly",
-                destination_csv_ref.display()
-            )
+          anyhow!(
+            "Destination CSV file {} is not formatted correctly",
+            destination_csv_ref.display()
+          )
         })?;
         let file = split.next().ok_or_else(|| {
-          anyhow::anyhow!(
+          anyhow!(
             "Destination CSV file {} is not formatted correctly",
             destination_csv.display()
           )
@@ -144,10 +150,12 @@ impl Inscribe {
       for file in self.files {
         inscription.push(Inscription::from_file(options.chain(), file)?);
       }
-      destinations.push(self
-        .destination
-        .map(Ok)
-        .unwrap_or_else(|| get_change_address(&client))?);
+      destinations.push(
+        self
+          .destination
+          .map(Ok)
+          .unwrap_or_else(|| get_change_address(&client))?,
+      );
     }
 
     let index = Index::open(&options)?;
@@ -462,18 +470,12 @@ impl Inscribe {
       ));
       taproot_spend_infos.push(taproot_spend_info);
 
-      let reveal_address = if destinations.len() > 1 {
-        &destinations[i]
-      } else {
-        &destinations[0]
-      };
-
       let (_, reveal_fee) = Self::build_reveal_transaction(
         &control_block,
         reveal_fee_rate,
         OutPoint::null(),
         TxOut {
-          script_pubkey: reveal_address.script_pubkey(),
+          script_pubkey: destinations[i % destinations.len()].script_pubkey(),
           value: 0,
         },
         &reveal_script,
@@ -501,14 +503,16 @@ impl Inscribe {
 
     tprintln!("[remake reveals]");
     let mut n = 0;
-    for (i, ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address)) in
-      control_blocks
-        .iter()
-        .zip(reveal_scripts)
-        .zip(key_pairs)
-        .zip(taproot_spend_infos)
-        .zip(commit_tx_addresses)
-        .enumerate()
+    for (
+      i,
+      ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address),
+    ) in control_blocks
+      .iter()
+      .zip(reveal_scripts)
+      .zip(key_pairs)
+      .zip(taproot_spend_infos)
+      .zip(commit_tx_addresses)
+      .enumerate()
     {
       let (vout, output) = unsigned_commit_tx
         .output
@@ -516,12 +520,6 @@ impl Inscribe {
         .enumerate()
         .find(|(_vout, output)| output.script_pubkey == commit_tx_address.script_pubkey())
         .expect("should find sat commit/inscription output");
-
-      let reveal_address = if destinations.len() > 1 {
-        &destinations[i]
-      } else {
-        &destinations[0]
-      };
 
       let (mut reveal_tx, fee) = Self::build_reveal_transaction(
         control_block,
@@ -531,7 +529,7 @@ impl Inscribe {
           vout: vout.try_into().unwrap(),
         },
         TxOut {
-          script_pubkey: reveal_address.script_pubkey(),
+          script_pubkey: destinations[i % destinations.len()].script_pubkey(),
           value: output.value,
         },
         &reveal_script,
