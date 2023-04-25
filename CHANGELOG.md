@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.5.2-gm3](https://github.com/casey/ord/releases/tag/0.5.2-gm3) - 2023-04-25
+-----------------------------------------------------------------------------
+
+### Added
+- Add `destination-csv` to `ord wallet inscribe` input to allow you to define a list of destinations and filenames when inscribing ordinals.
+
 [0.5.2-gm2](https://github.com/casey/ord/releases/tag/0.5.2-gm2) - 2023-04-21
 -----------------------------------------------------------------------------
 
