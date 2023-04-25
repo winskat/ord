@@ -229,13 +229,13 @@ impl Inscribe {
         })?;
       }
 
-      if !self.no_broadcast {
-        if !self.no_backup {
-          for recovery_key_pair in recovery_key_pairs {
-            Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
-          }
+      if !self.no_backup {
+        for recovery_key_pair in recovery_key_pairs {
+          Inscribe::backup_recovery_key(&client, recovery_key_pair, options.chain().network())?;
         }
+      }
 
+      if !self.no_broadcast {
         let commit = client
           .send_raw_transaction(&signed_raw_commit_tx)
           .context("Failed to send commit transaction")?;
