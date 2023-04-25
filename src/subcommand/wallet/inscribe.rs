@@ -256,7 +256,7 @@ impl Inscribe {
             thread::sleep(time::Duration::from_secs(60));
             match options.bitcoin_rpc_client_for_wallet_command(false) {
               Ok(client) => {
-                if failed == true {
+                if failed {
                   eprintln!("[reconnected]");
                   failed = false;
                 }
