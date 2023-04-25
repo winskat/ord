@@ -105,6 +105,15 @@ impl Inscribe {
     let mut client = options.bitcoin_rpc_client_for_wallet_command(false)?;
 
     if let Some(destination_csv) = self.destination_csv {
+
+      if !self.files.is_empty() {
+        anyhow::anyhow!("Cannot use both --destination-csv and provide files")
+      };
+
+      if !self.destination.is_empty() {
+        anyhow::anyhow!("Cannot use both --destination-csv and --destination")
+      };
+
       let destination_csv_ref = &destination_csv;
       let file = File::open(destination_csv_ref)?;
       let reader = BufReader::new(file);
