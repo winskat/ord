@@ -17,8 +17,8 @@ use {
   bitcoincore_rpc::Client,
   bitcoincore_rpc::RawTx,
   std::collections::BTreeSet,
-  std::{thread, time},
   std::io::Write,
+  std::{thread, time},
 };
 
 #[derive(Deserialize)]
@@ -69,7 +69,10 @@ pub(crate) struct Inscribe {
   pub(crate) no_backup: bool,
   #[clap(long, help = "Do not broadcast any transactions.")]
   pub(crate) no_broadcast: bool,
-  #[clap(long, help = "Wait for the commit tx to confirm before sending reveal txs.")]
+  #[clap(
+    long,
+    help = "Wait for the commit tx to confirm before sending reveal txs."
+  )]
   pub(crate) wait_after_commit: bool,
   #[clap(
     long,
@@ -89,7 +92,10 @@ pub(crate) struct Inscribe {
     help = "Amount of postage to include in the inscription. Default `10000 sats`"
   )]
   pub(crate) postage: Option<Amount>,
-  #[clap(long, help = "Use at most <MAX_INPUTS> inputs to build the commit transaction.")]
+  #[clap(
+    long,
+    help = "Use at most <MAX_INPUTS> inputs to build the commit transaction."
+  )]
   pub(crate) max_inputs: Option<usize>,
 }
 
@@ -646,7 +652,7 @@ mod tests {
         None,
         FeeRate::try_from(1.0).unwrap(),
         FeeRate::try_from(1.0).unwrap(),
-      None,
+        None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
       )
