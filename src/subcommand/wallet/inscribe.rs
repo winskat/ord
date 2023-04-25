@@ -107,12 +107,10 @@ impl Inscribe {
     if let Some(destination_csv) = self.destination_csv {
 
       if !self.files.is_empty() {
-        anyhow::anyhow!("Cannot use both --destination-csv and provide files")
-      };
-
-      if !self.destination.is_empty() {
-        anyhow::anyhow!("Cannot use both --destination-csv and --destination")
-      };
+        return Err(anyhow!("Cannot use both --destination-csv and provide files"));
+      } else if let Some(_) = self.destination {
+        return Err(anyhow!("Cannot use both --destination-csv and --destination"));
+      }
 
       let destination_csv_ref = &destination_csv;
       let file = File::open(destination_csv_ref)?;
