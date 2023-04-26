@@ -1,11 +1,22 @@
 Changelog
 =========
 
+[0.5.2-gm4](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm3) - 2023-04-??
+--------------------------------------------------------------------------------
+
+### Changed
+- Shorten the `--destination-csv` flag for `wallet inscribe` to just `--csv`.
+- If no `--destination` or `--csv` flag is provided to `wallet inscribe`, generate a different destination address for each inscription.
+- Allow multiple `--destination` flags to `wallet inscribe`. If there are less destinations than files to inscribe, cycle through the destinations.
+
 [0.5.2-gm3](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm3) - 2023-04-25
 --------------------------------------------------------------------------------
 
 ### Added
-- Add `--destination-csv` flag to `ord wallet inscribe` to provide a file containing a list of destinations and filenames when inscribing.
+- Add `--destination-csv` flag to `wallet inscribe` to provide a file containing a list of `<destination>,<filename>` pairs when inscribing.
+
+### Changed
+- Don't have `--no-broadcast` imply `--no-backup` in `wallet inscribe`..
 
 [0.5.2-gm2](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm2) - 2023-04-21
 --------------------------------------------------------------------------------
