@@ -1,7 +1,7 @@
 Changelog
 =========
 
-[0.5.2-gm4](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm3) - 2023-04-??
+[0.5.2-gm4](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm4) - 2023-04-26
 --------------------------------------------------------------------------------
 
 ### Changed
