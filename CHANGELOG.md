@@ -5,7 +5,10 @@ Changelog
 --------------------------------------------------------------------------------
 
 ### Added
-- Add `--destination-csv` flag to `ord wallet inscribe` to provide a file containing a list of destinations and filenames when inscribing.
+- Add `--csv` flag to `wallet inscribe` to provide a file containing a list of `<destination>,<filename>` pairs when inscribing.
+
+### Changed
+- Don't have `--no-broadcast` imply `--no-backup` in `wallet inscribe`..
 
 [0.5.2-gm2](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm2) - 2023-04-21
 --------------------------------------------------------------------------------
