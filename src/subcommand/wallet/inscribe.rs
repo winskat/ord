@@ -65,7 +65,7 @@ pub(crate) struct Inscribe {
   pub(crate) no_limit: bool,
   #[clap(long, help = "Don't sign or broadcast transactions.")]
   pub(crate) dry_run: bool,
-  #[clap(long, help = "Dump raw hex transactions instead of sending them.")]
+  #[clap(long, help = "Dump raw hex transactions and recovery keys to standard output.")]
   pub(crate) dump: bool,
   #[clap(long, help = "Send inscription to <DESTINATION>.")]
   pub(crate) destination: Option<Address>,
