@@ -128,7 +128,7 @@ impl Inscribe {
       let reader = BufReader::new(file);
       for line in reader.lines() {
         let line = line?;
-        let mut split = line.split(',');
+        let mut split = line.trim_start_matches("\u{feff}").split(',');
         let destination = split.next().ok_or_else(|| {
           anyhow!(
             "Destination CSV file {} is not formatted correctly",
