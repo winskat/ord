@@ -159,15 +159,18 @@ impl Inscribe {
       }
     }
 
+    tprintln!("[update index]");
     let index = Index::open(&options)?;
     index.update()?;
 
+    tprintln!("[get utxos]");
     let mut utxos = if self.coin_control {
       BTreeMap::new()
     } else {
       index.get_unspent_outputs(Wallet::load(&options)?)?
     };
 
+    tprintln!("[insert utxos]");
     for outpoint in &self.utxo {
       utxos.insert(
         *outpoint,
@@ -177,8 +180,10 @@ impl Inscribe {
       );
     }
 
+    tprintln!("[get inscriptions]");
     let inscriptions = index.get_inscriptions(None)?;
 
+    tprintln!("[get change]");
     let commit_tx_change = [get_change_address(&client)?, get_change_address(&client)?];
 
     tprintln!("[create_inscription_transactions]");
