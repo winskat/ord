@@ -89,6 +89,8 @@ pub(crate) struct Inscribe {
   pub(crate) destination: Vec<Address>,
   #[clap(long, help = "Send any alignment output to <ALIGNMENT>.")]
   pub(crate) alignment: Option<Address>,
+  #[clap(long, help = "Send any change output to <CHANGE>.")]
+  pub(crate) change: Option<Address>,
   #[clap(
     long,
     help = "Amount of postage to include in the inscription. Default `10000 sats`"
@@ -184,7 +186,13 @@ impl Inscribe {
     let inscriptions = index.get_inscriptions(None)?;
 
     tprintln!("[get change]");
-    let commit_tx_change = [get_change_address(&client)?, get_change_address(&client)?];
+    let commit_tx_change = [
+      get_change_address(&client)?,
+      match self.change {
+        Some(change) => change,
+        None => get_change_address(&client)?,
+      },
+    ];
 
     tprintln!("[create_inscription_transactions]");
     let (satpoint, unsigned_commit_tx, reveal_txs, recovery_key_pairs) =
