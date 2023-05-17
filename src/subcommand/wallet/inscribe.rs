@@ -83,7 +83,10 @@ pub(crate) struct Inscribe {
   pub(crate) no_limit: bool,
   #[clap(long, help = "Don't sign or broadcast transactions.")]
   pub(crate) dry_run: bool,
-  #[clap(long, help = "Dump raw hex transactions and recovery keys to standard output.")]
+  #[clap(
+    long,
+    help = "Dump raw hex transactions and recovery keys to standard output."
+  )]
   pub(crate) dump: bool,
   #[clap(long, help = "Send inscription to <DESTINATION>.")]
   pub(crate) destination: Vec<Address>,
@@ -117,13 +120,9 @@ impl Inscribe {
 
     if let Some(csv) = self.csv {
       if !self.files.is_empty() {
-        return Err(anyhow!(
-          "Cannot use both --csv and provide files"
-        ));
+        return Err(anyhow!("Cannot use both --csv and provide files"));
       } else if !self.destination.is_empty() {
-        return Err(anyhow!(
-          "Cannot use both --csv and --destination"
-        ));
+        return Err(anyhow!("Cannot use both --csv and --destination"));
       }
 
       let file = File::open(&csv)?;
@@ -153,8 +152,7 @@ impl Inscribe {
       }
       if self.destination.is_empty() {
         for _ in self.files {
-          destinations.push(
-            get_change_address(&client)?);
+          destinations.push(get_change_address(&client)?);
         }
       } else {
         destinations = self.destination;
