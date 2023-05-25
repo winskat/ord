@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.5.2-gm7](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm7) - 2023-05-24
+--------------------------------------------------------------------------------
+
+### Added
+- Add `--cursed` to `wallet inscribe` to create an inscription that won't be recognized by current versions of ord, but that will be recognized by some indexers as "cursed".
+
 [0.5.2-gm6](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm6) - 2023-05-23
 --------------------------------------------------------------------------------
 
