@@ -96,6 +96,7 @@ impl Preview {
           max_inputs: None,
           csv: None,
           cursed: false,
+          allow_reinscribe: false,
         },
       )),
     }
