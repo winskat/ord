@@ -163,6 +163,10 @@ impl Inscribe {
       }
     }
 
+    if inscription.is_empty() {
+      return Err(anyhow!("Provide at least one file to inscribe"));
+    }
+
     tprintln!("[update index]");
     let index = Index::open(&options)?;
     index.update()?;
