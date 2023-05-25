@@ -109,6 +109,8 @@ pub(crate) struct Inscribe {
     help = "Location of a CSV file to use for a combination of DESTINATION and FILE NAMES.  Should be structured `destination,file`."
   )]
   pub(crate) csv: Option<PathBuf>,
+  #[clap(long, help = "Create a 'cursed' inscription (with an unknown even 0x42 tag)")]
+  pub(crate) cursed: bool,
 }
 
 impl Inscribe {
@@ -211,6 +213,7 @@ impl Inscribe {
           Some(postage) => postage,
           _ => TransactionBuilder::DEFAULT_TARGET_POSTAGE,
         },
+        self.cursed
       )?;
 
     tprintln!("[sign commit]");
@@ -414,6 +417,7 @@ impl Inscribe {
     max_inputs: Option<usize>,
     no_limit: bool,
     postage: Amount,
+    cursed: bool,
   ) -> Result<(SatPoint, Transaction, Vec<Transaction>, Vec<TweakedKeyPair>)> {
     let satpoint = if let Some(satpoint) = satpoint {
       satpoint
@@ -464,6 +468,7 @@ impl Inscribe {
         script::Builder::new()
           .push_slice(&public_key.serialize())
           .push_opcode(opcodes::all::OP_CHECKSIG),
+        cursed,
       );
 
       let taproot_spend_info = TaprootBuilder::new()
@@ -715,6 +720,7 @@ mod tests {
         None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
       )
       .unwrap();
 
@@ -749,6 +755,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
     )
     .unwrap();
 
@@ -787,6 +794,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
     )
     .unwrap_err()
     .to_string();
@@ -832,6 +840,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
     )
     .is_ok())
   }
@@ -872,6 +881,7 @@ mod tests {
         None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
       )
       .unwrap();
 
@@ -938,6 +948,7 @@ mod tests {
         None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
       )
       .unwrap();
 
@@ -990,6 +1001,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
     )
     .unwrap_err()
     .to_string();
@@ -1025,6 +1037,7 @@ mod tests {
         None,
         true,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
       )
       .unwrap();
 

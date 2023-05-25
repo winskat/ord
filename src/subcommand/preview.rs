@@ -95,6 +95,7 @@ impl Preview {
           postage: Some(TransactionBuilder::DEFAULT_TARGET_POSTAGE),
           max_inputs: None,
           csv: None,
+          cursed: false,
         },
       )),
     }
