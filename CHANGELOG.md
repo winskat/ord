@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.5.2-gm9](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm9) - 2023-05-30
+--------------------------------------------------------------------------------
+
+### Changed
+- Check that at least one filename is provided when inscribing.
+- Merged in latest master branch from casey's repo, including "Unbind inscriptions from zero-sat transactions (#2107)".
+
 [0.5.2-gm8](https://github.com/gmart7t2/ord/releases/tag/0.5.2-gm8) - 2023-05-24
 --------------------------------------------------------------------------------
 
