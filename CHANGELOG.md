@@ -1,11 +1,11 @@
 Changelog
 =========
 
-[0.6.1-gm1](https://github.com/gmart7t2/ord/releases/tag/0.6.0-gm1) - 2023-06-07
+[0.6.1-gm1](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm1) - 2023-06-07
 --------------------------------------------------------------------------------
 
 ### Changed
-- Merged in release 0.6.1 from upstream.
+- Merged in releases 0.6.0 and 0.6.1 from upstream.
 
 [0.6.1](https://github.com/ordinals/ord/releases/tag/0.6.1) - 2023-06-06
 ---------------------------------------------------------------------
