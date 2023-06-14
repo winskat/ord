@@ -113,6 +113,8 @@ pub(crate) struct Inscribe {
   pub(crate) cursed: bool,
   #[clap(long, help = "Allow inscription on sats that are already inscribed.")]
   pub(crate) allow_reinscribe: bool,
+  #[clap(long, help = "Use the same recovery key for all inscriptions.")]
+  pub(crate) single_key: bool,
 }
 
 impl Inscribe {
@@ -201,7 +203,7 @@ impl Inscribe {
     ];
 
     tprintln!("[create_inscription_transactions]");
-    let (satpoint, unsigned_commit_tx, reveal_txs, recovery_key_pairs) =
+    let (satpoint, unsigned_commit_tx, reveal_txs, mut recovery_key_pairs) =
       Inscribe::create_inscription_transactions(
         self.satpoint,
         inscription,
@@ -221,6 +223,7 @@ impl Inscribe {
         },
         self.cursed,
         self.allow_reinscribe,
+        self.single_key,
       )?;
 
     tprintln!("[sign commit]");
@@ -273,6 +276,10 @@ impl Inscribe {
         fees,
       })?;
     } else {
+      if self.single_key {
+        recovery_key_pairs = [recovery_key_pairs[0]].to_vec();
+      }
+
       if self.dump {
         let commit = signed_raw_commit_tx.raw_hex();
 
@@ -426,6 +433,7 @@ impl Inscribe {
     postage: Amount,
     cursed: bool,
     allow_reinscribe: bool,
+    single_key: bool,
   ) -> Result<(SatPoint, Transaction, Vec<Transaction>, Vec<TweakedKeyPair>)> {
     let satpoint = if let Some(satpoint) = satpoint {
       satpoint
@@ -466,10 +474,16 @@ impl Inscribe {
     let mut taproot_spend_infos = Vec::new();
 
     tprintln!("[make reveals]");
+
+    let secp256k1 = Secp256k1::new();
+    let mut key_pair = UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng());
+    let (mut public_key, mut _parity) = XOnlyPublicKey::from_keypair(&key_pair);
+
     for (i, inscription) in inscription.iter().enumerate() {
-      let secp256k1 = Secp256k1::new();
-      let key_pair = UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng());
-      let (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
+      if !single_key && i != 0 {
+        key_pair = UntweakedKeyPair::new(&secp256k1, &mut rand::thread_rng());
+        (public_key, _parity) = XOnlyPublicKey::from_keypair(&key_pair);
+      }
       key_pairs.push(key_pair);
 
       let reveal_script = inscription.append_reveal_script(
@@ -526,6 +540,13 @@ impl Inscribe {
     let mut reveal_txs = Vec::new();
     let mut recovery_key_pairs = Vec::new();
 
+    let (first_vout, _output) = unsigned_commit_tx
+      .output
+      .iter()
+      .enumerate()
+      .find(|(_vout, output)| output.script_pubkey == commit_tx_addresses[0].script_pubkey())
+      .expect("should find sat commit/inscription output");
+
     tprintln!("[remake reveals]");
     let mut n = 0;
     for (
@@ -539,12 +560,8 @@ impl Inscribe {
       .zip(commit_tx_addresses)
       .enumerate()
     {
-      let (vout, output) = unsigned_commit_tx
-        .output
-        .iter()
-        .enumerate()
-        .find(|(_vout, output)| output.script_pubkey == commit_tx_address.script_pubkey())
-        .expect("should find sat commit/inscription output");
+      let vout = i + first_vout;
+      let output = &unsigned_commit_tx.output[vout];
 
       let (mut reveal_tx, fee) = Self::build_reveal_transaction(
         control_block,
@@ -730,6 +747,7 @@ mod tests {
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
         false,
         false,
+        false,
       )
       .unwrap();
 
@@ -764,6 +782,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
       false,
       false,
     )
@@ -804,6 +823,7 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
       false,
       false,
     )
@@ -853,6 +873,7 @@ mod tests {
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
       false,
       false,
+      false,
     )
     .is_ok())
   }
@@ -893,6 +914,7 @@ mod tests {
         None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
         false,
         false,
       )
@@ -963,6 +985,7 @@ mod tests {
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
         false,
         false,
+        false,
       )
       .unwrap();
 
@@ -1017,6 +1040,7 @@ mod tests {
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
       false,
       false,
+      false,
     )
     .unwrap_err()
     .to_string();
@@ -1052,6 +1076,7 @@ mod tests {
         None,
         true,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
         false,
         false,
       )
