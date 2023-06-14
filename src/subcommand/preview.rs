@@ -97,6 +97,7 @@ impl Preview {
           csv: None,
           cursed: false,
           allow_reinscribe: false,
+          single_key: false,
         },
       )),
     }
