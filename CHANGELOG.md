@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.6.1-gm4](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm4) - 2023-06-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Merged "Recursive Inscriptions (#2167)" from upstream.
+
 [0.6.1-gm3](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm3) - 2023-06-14
 --------------------------------------------------------------------------------
 
