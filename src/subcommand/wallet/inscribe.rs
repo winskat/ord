@@ -18,9 +18,9 @@ use {
   bitcoincore_rpc::RawTx,
   std::collections::BTreeSet,
   std::fs::File,
-  std::io::Write,
+  // std::io::Write,
   std::io::{BufRead, BufReader},
-  std::{thread, time},
+  // std::{thread, time},
 };
 
 #[derive(Deserialize)]
@@ -71,11 +71,13 @@ pub(crate) struct Inscribe {
   pub(crate) no_backup: bool,
   #[clap(long, help = "Do not broadcast any transactions.")]
   pub(crate) no_broadcast: bool,
+/*
   #[clap(
     long,
     help = "Wait for the commit tx to confirm before sending reveal txs."
   )]
   pub(crate) wait_after_commit: bool,
+*/
   #[clap(
     long,
     help = "Do not check that transactions are equal to or below the MAX_STANDARD_TX_WEIGHT of 400,000 weight units. Transactions over this limit are currently nonstandard and will not be relayed by bitcoind in its default configuration. Do not use this flag unless you understand the implications."
@@ -319,7 +321,7 @@ impl Inscribe {
         let commit = client
           .send_raw_transaction(&signed_raw_commit_tx)
           .context("Failed to send commit transaction")?;
-
+/*
         if self.wait_after_commit {
           let mut failed = false;
           drop(index);
@@ -361,7 +363,7 @@ impl Inscribe {
             }
           }
         }
-
+*/
         client = options.bitcoin_rpc_client_for_wallet_command(false)?;
         let mut reveals = Vec::new();
         for reveal_tx in reveal_txs {
