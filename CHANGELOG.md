@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.6.1-gm2](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm2) - 2023-06-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Give a reasonable error message when `ord inscriptions --id <inscriptionid>` fails to find the inscription.
+
 [0.6.1-gm1](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm1) - 2023-06-07
 --------------------------------------------------------------------------------
 
