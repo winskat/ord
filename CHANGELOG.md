@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.6.1-gm3](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm3) - 2023-06-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Add `--single-key` flag to `wallet inscribe` to use the same temporary private key for all inscriptions.
+- Remove the `--wait-after-commit` flag from `wallet inscribe`. It's too hard to use safely. Instead, use `--dump --no_broadcast --no_backup`, save the output to a file, and broadcast the transactions manually.
+
 [0.6.1-gm2](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm2) - 2023-06-14
 --------------------------------------------------------------------------------
 
