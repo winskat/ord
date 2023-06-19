@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.6.1-gm5](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm5) - 2023-06-19
+--------------------------------------------------------------------------------
+
+### Changed
+- When making inscriptions, write any reveal transactions that fail to broadcast to a file for manual broadcast later.
+
 [0.6.1-gm4](https://github.com/gmart7t2/ord/releases/tag/0.6.1-gm4) - 2023-06-14
 --------------------------------------------------------------------------------
 
