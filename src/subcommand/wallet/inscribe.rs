@@ -152,7 +152,11 @@ impl Inscribe {
         })?;
         let file = PathBuf::from(file);
         inscription.push(Inscription::from_file(options.chain(), file)?);
-        destinations.push(Address::from_str(destination)?);
+        let address = Address::from_str(destination)?;
+        options
+          .chain()
+          .check_address_is_valid_for_network(&address)?;
+        destinations.push(address);
       }
     } else {
       for file in self.files.iter() {
@@ -163,6 +167,11 @@ impl Inscribe {
           destinations.push(get_change_address(&client)?);
         }
       } else {
+        for destination in &self.destination {
+          options
+            .chain()
+            .check_address_is_valid_for_network(&destination)?;
+        }
         destinations = self.destination;
       }
     }
