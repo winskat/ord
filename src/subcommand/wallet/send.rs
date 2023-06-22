@@ -89,14 +89,26 @@ impl Send {
         .get_inscription_satpoint_by_id(id)?
         .ok_or_else(|| anyhow!("Inscription {id} not found"))?,
       Outgoing::Amount(amount) => {
+        if self.coin_control || !self.utxo.is_empty() {
+          bail!("--coin_control and --utxo don't work when sending cardinals");
+        }
+          
         self.send_amount(amount, &client, inscriptions, unspent_outputs)?;
         return Ok(());
       }
       Outgoing::All => {
+        if self.coin_control || !self.utxo.is_empty() {
+          bail!("--coin_control and --utxo don't work when sending cardinals");
+        }
+
         self.send_all_or_max(&client, inscriptions, unspent_outputs)?;
         return Ok(());
       }
       Outgoing::Max => {
+        if self.coin_control || !self.utxo.is_empty() {
+          bail!("--coin_control and --utxo don't work when sending cardinals");
+        }
+
         self.send_all_or_max(&client, inscriptions, unspent_outputs)?;
         return Ok(());
       }
