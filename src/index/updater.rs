@@ -41,6 +41,10 @@ pub(crate) struct Updater {
 
 impl Updater {
   pub(crate) fn update(index: &Index) -> Result {
+    if index.height_limit == Some(0) {
+      return Ok(());
+    }
+
     let wtx = index.begin_write()?;
 
     let height = wtx
