@@ -265,12 +265,10 @@ impl Inscribe {
         &[signed_raw_commit_tx.raw_hex().into()],
       )?
       .weight;
-    if !self.no_limit {
-      if commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
-        bail!(
-          "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
-        );
-      }
+    if !self.no_limit && commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
+      bail!(
+        "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
+      );
     }
 
     tprintln!("[insert values]");
