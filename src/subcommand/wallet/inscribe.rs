@@ -145,7 +145,7 @@ impl Inscribe {
       let mut line_number = 1;
       for line in reader.lines() {
         let line = line?;
-        let mut split = line.trim_start_matches("\u{feff}").split(',');
+        let mut split = line.trim_start_matches('\u{feff}').split(',');
         let destination = split.next().ok_or_else(|| {
           anyhow!(
             "Destination CSV file '{}' is not formatted correctly",
@@ -198,7 +198,7 @@ impl Inscribe {
         for destination in &self.destination {
           options
             .chain()
-            .check_address_is_valid_for_network(&destination)?;
+            .check_address_is_valid_for_network(destination)?;
         }
         destinations = self.destination;
       }
@@ -446,7 +446,7 @@ impl Inscribe {
           fs::remove_file(failed_reveals_filename)?;
         } else {
           for tx in &failed_reveals {
-            write!(file, "{tx}\n")?;
+            writeln!(file, "{tx}")?;
           }
 
           println!(
