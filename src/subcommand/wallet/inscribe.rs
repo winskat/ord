@@ -32,8 +32,11 @@ pub struct DecodeRawTransactionOutput {
 struct OutputDump {
   satpoint: SatPoint,
   inscriptions: Vec<InscriptionId>,
+  filenames: Vec<PathBuf>,
   commit: String,
+  commit_weight: u64,
   reveals: Vec<String>,
+  reveal_weights: Vec<usize>,
   recovery_descriptors: Vec<String>,
   fees: u64,
 }
@@ -122,6 +125,7 @@ pub(crate) struct Inscribe {
 impl Inscribe {
   pub(crate) fn run(self, options: Options) -> Result {
     let mut inscription = Vec::new();
+    let mut filenames = Vec::new();
     let mut destinations = Vec::new();
 
     let mut client = options.bitcoin_rpc_client_for_wallet_command(false)?;
@@ -153,6 +157,8 @@ impl Inscribe {
         })?;
 
         let file = PathBuf::from(file);
+        filenames.push(file.clone());
+
 
         let i = Inscription::from_file(options.chain(), &file);
         if i.is_ok() {
@@ -171,6 +177,7 @@ impl Inscribe {
     } else {
       for file in self.files.iter() {
         inscription.push(Inscription::from_file(options.chain(), file)?);
+        filenames.push(PathBuf::from(file));
       }
       if self.destination.is_empty() {
         for _ in self.files {
@@ -252,18 +259,16 @@ impl Inscribe {
       .sign_raw_transaction_with_wallet(&unsigned_commit_tx, None, None)?
       .hex;
 
-    if !self.no_limit {
-      let commit_weight = client
-        .call::<DecodeRawTransactionOutput>(
-          "decoderawtransaction",
-          &[signed_raw_commit_tx.raw_hex().into()],
-        )?
-        .weight;
-      if commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
-        bail!(
-          "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
-        );
-      }
+    let commit_weight = client
+      .call::<DecodeRawTransactionOutput>(
+        "decoderawtransaction",
+        &[signed_raw_commit_tx.raw_hex().into()],
+      )?
+      .weight;
+    if !self.no_limit && commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
+      bail!(
+        "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
+      );
     }
 
     tprintln!("[insert values]");
@@ -305,9 +310,11 @@ impl Inscribe {
         let commit = signed_raw_commit_tx.raw_hex();
 
         let mut reveals = Vec::new();
+        let mut reveal_weights = Vec::new();
         let mut inscriptions = Vec::new();
         for reveal_tx in reveal_txs.iter() {
           reveals.push(reveal_tx.raw_hex());
+          reveal_weights.push(reveal_tx.weight());
           inscriptions.push(reveal_tx.txid().into());
         }
 
@@ -323,8 +330,11 @@ impl Inscribe {
         print_json(OutputDump {
           satpoint,
           inscriptions,
+          filenames,
           commit,
+          commit_weight,
           reveals,
+          reveal_weights,
           recovery_descriptors,
           fees,
         })?;
