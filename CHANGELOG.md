@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.0-gm7](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm7) - 2023-07-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Force graceful shutdown on server error - another index corruption fix (#2270)
+
 [0.8.0-gm6](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm6) - 2023-07-13
 --------------------------------------------------------------------------------
 
