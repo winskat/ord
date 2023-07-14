@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.0-gm9](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm9) - 2023-07-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Show an error message when there's no inscription envelope to decode.
+- Decode multiple envelopes to multiple files.
+
 [0.8.0-gm8](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm8) - 2023-07-14
 --------------------------------------------------------------------------------
 
