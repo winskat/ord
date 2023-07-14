@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.0-gm8](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm8) - 2023-07-14
+--------------------------------------------------------------------------------
+
+### Changed
+- Add filenames, commit weight, and reveal weights to `--dump` file (#7)
+
 [0.8.0-gm7](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm7) - 2023-07-14
 --------------------------------------------------------------------------------
 
