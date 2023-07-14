@@ -176,12 +176,17 @@ impl Inscribe {
       }
     } else {
       for file in self.files.iter() {
+        tprintln!("[open files]");
         inscription.push(Inscription::from_file(options.chain(), file)?);
         filenames.push(PathBuf::from(file));
       }
       if self.destination.is_empty() {
-        for _ in self.files {
+        tprintln!("[get destination addresses]");
+        for (i, _) in self.files.iter().enumerate() {
           destinations.push(get_change_address(&client)?);
+          if (i+1) % 100 == 0 {
+            tprintln!("  [{}]", i+1);
+          }
         }
       } else {
         for destination in &self.destination {
@@ -609,7 +614,6 @@ impl Inscribe {
       .expect("should find sat commit/inscription output");
 
     tprintln!("[remake reveals]");
-    let mut n = 0;
     for (
       i,
       ((((control_block, reveal_script), key_pair), taproot_spend_info), commit_tx_address),
@@ -692,9 +696,8 @@ impl Inscribe {
           "reveal transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {reveal_weight}"
         );
       }
-      n += 1;
-      if n % 100 == 0 {
-        tprintln!("  [{n}]");
+      if (i+1) % 100 == 0 {
+        tprintln!("  [{}]", i+1);
       }
     }
 
