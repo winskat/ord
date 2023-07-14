@@ -25,7 +25,7 @@ use {
 
 #[derive(Deserialize)]
 pub struct DecodeRawTransactionOutput {
-  pub weight: u64,
+  pub weight: usize,
 }
 
 #[derive(Serialize)]
@@ -34,7 +34,7 @@ struct OutputDump {
   inscriptions: Vec<InscriptionId>,
   filenames: Vec<PathBuf>,
   commit: String,
-  commit_weight: u64,
+  commit_weight: usize,
   reveals: Vec<String>,
   reveal_weights: Vec<usize>,
   recovery_descriptors: Vec<String>,
@@ -265,7 +265,7 @@ impl Inscribe {
         &[signed_raw_commit_tx.raw_hex().into()],
       )?
       .weight;
-    if !self.no_limit && commit_weight > MAX_STANDARD_TX_WEIGHT.into() {
+    if !self.no_limit && commit_weight > MAX_STANDARD_TX_WEIGHT as usize {
       bail!(
         "commit transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {commit_weight}"
       );
