@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.0-gm11](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm11) - 2023-07-14
+----------------------------------------------------------------------------------
+
+### Added
+- Added a server page listing the sent inscriptions per block.
+
 [0.8.0-gm10](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm10) - 2023-07-14
 ----------------------------------------------------------------------------------
 
