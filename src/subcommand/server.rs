@@ -134,7 +134,7 @@ impl Server {
         if let Err(error) = index_clone.update() {
           log::warn!("{error}");
         }
-        thread::sleep(Duration::from_millis(50));
+        thread::sleep(Duration::from_millis(1000));
       });
       INDEXER.lock().unwrap().replace(index_thread);
 
