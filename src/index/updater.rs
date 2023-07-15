@@ -403,6 +403,12 @@ impl Updater {
 
       if prev_hash.value() != block.header.prev_blockhash.as_ref() {
         index.reorged.store(true, atomic::Ordering::Relaxed);
+        fs::OpenOptions::new()
+          .create(true)
+          .write(true)
+          .truncate(true)
+          .open(String::from("error.txt"))?
+          .write_all(format!("reorg detected at or before {prev_height}\n").as_bytes())?;
         return Err(anyhow!("reorg detected at or before {prev_height}"));
       }
     }
