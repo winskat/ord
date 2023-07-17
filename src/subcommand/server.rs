@@ -547,7 +547,7 @@ impl Server {
         }
       };
 
-      ret += &format!("{} {}\n", inscription_id.to_string(), address);
+      ret += &format!("{} {}\n", inscription_id, address);
     }
 
     Ok(ret)
