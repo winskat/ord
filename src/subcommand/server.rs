@@ -28,6 +28,7 @@ use {
     AcmeConfig,
   },
   std::{cmp::Ordering, str},
+  tokio::time::sleep,
   tokio_stream::StreamExt,
   tower_http::{
     compression::CompressionLayer,
@@ -1050,6 +1051,7 @@ impl Server {
         let mut ret = Vec::new();
 
         for i in start..end {
+          sleep(Duration::from_millis(0)).await;
           match index.get_inscription_id_by_inscription_number(i) {
             Err(_) => return Err(ServerError::BadRequest(format!("no inscription {i}"))),
             Ok(inscription_id) => match inscription_id {
