@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.0-gm15](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm15) - 2023-07-20
+----------------------------------------------------------------------------------
+
+### Changed
+- Increase the limit on /inscriptions_json from 100 to 1000.
+- Attempt to stop blocking the server when fetching a lot of inscriptions.
+
 [0.8.0-gm14](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm14) - 2023-07-17
 ----------------------------------------------------------------------------------
 
