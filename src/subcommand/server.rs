@@ -1033,7 +1033,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(path): Path<(i64, i64)>,
   ) -> ServerResult<String> {
-    const MAX_JSON_INSCRIPTIONS: i64 = 100;
+    const MAX_JSON_INSCRIPTIONS: i64 = 1000;
 
     let start = path.0;
     let end = path.1;
