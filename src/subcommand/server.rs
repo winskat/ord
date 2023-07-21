@@ -1060,9 +1060,11 @@ impl Server {
                   .get_inscription_entry(inscription_id)?
                   .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
 
-                let inscription = index
-                  .get_inscription_by_id(inscription_id)?
-                  .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
+                let tx = index.get_transaction(inscription_id.txid)?.unwrap();
+                let inscription = Inscription::from_transaction(&tx)
+                  .get(inscription_id.index as usize)
+                  .map(|transaction_inscription| transaction_inscription.inscription.clone())
+                  .unwrap();
 
                 let satpoint = index
                   .get_inscription_satpoint_by_id(inscription_id)?
@@ -1072,17 +1074,21 @@ impl Server {
                   None
                 } else {
                   Some(
-                    index
-                      .get_transaction(satpoint.outpoint.txid)?
-                      .ok_or_not_found(|| {
-                        format!("inscription {inscription_id} current transaction")
-                      })?
-                      .output
-                      .into_iter()
-                      .nth(satpoint.outpoint.vout.try_into().unwrap())
-                      .ok_or_not_found(|| {
-                        format!("inscription {inscription_id} current transaction output")
-                      })?,
+                    if satpoint.outpoint.txid == inscription_id.txid {
+                      tx
+                    } else {
+                      index
+                        .get_transaction(satpoint.outpoint.txid)?
+                        .ok_or_not_found(|| {
+                          format!("inscription {inscription_id} current transaction")
+                        })?
+                    }
+                    .output
+                    .into_iter()
+                    .nth(satpoint.outpoint.vout.try_into().unwrap())
+                    .ok_or_not_found(|| {
+                      format!("inscription {inscription_id} current transaction output")
+                    })?,
                   )
                 };
 
