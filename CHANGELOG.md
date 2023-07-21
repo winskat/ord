@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.0-gm16](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm16) - 2023-07-21
+----------------------------------------------------------------------------------
+
+### Changed
+- Use `getblockstats` instead of `getblockhash | getblock` to look up a block's time.
+
 [0.8.0-gm15](https://github.com/gmart7t2/ord/releases/tag/0.8.0-gm15) - 2023-07-20
 ----------------------------------------------------------------------------------
 
