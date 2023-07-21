@@ -98,7 +98,7 @@ struct SatJson {
   block: u64,
   offset: u64,
   rarity: Rarity,
-  timestamp: i64,
+  // timestamp: i64,
 }
 
 #[derive(RustEmbed)]
@@ -1106,7 +1106,7 @@ impl Server {
                     block: s.height().0,
                     offset: s.third(),
                     rarity: s.rarity(),
-                    timestamp: index.block_time(s.height())?.unix_timestamp(),
+                    // timestamp: index.block_time(s.height())?.unix_timestamp(),
                   })
                 } else {
                   None
