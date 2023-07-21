@@ -859,7 +859,7 @@ impl Index {
       Ok(stats) => {
         let time = stats.time.unwrap();
         Ok(Blocktime::confirmed(time as u32))
-      },
+      }
       Err(_) => {
         let tx = self.database.begin_read()?;
 
