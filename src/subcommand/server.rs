@@ -200,8 +200,12 @@ impl Server {
         .route("/inscriptions", get(Self::inscriptions))
         .route("/inscriptions/:from", get(Self::inscriptions_from))
         .route(
+          "/inscriptions_json/:start",
+          get(Self::inscriptions_json_start),
+        )
+        .route(
           "/inscriptions_json/:start/:end",
-          get(Self::inscriptions_json),
+          get(Self::inscriptions_json_start_end),
         )
         .route("/install.sh", get(Self::install_script))
         .route("/ordinal/:sat", get(Self::ordinal))
@@ -1029,15 +1033,30 @@ impl Server {
     )
   }
 
-  async fn inscriptions_json(
+  async fn inscriptions_json_start(
+    Extension(page_config): Extension<Arc<PageConfig>>,
+    Extension(index): Extension<Arc<Index>>,
+    Path(start): Path<i64>,
+  ) -> ServerResult<String> {
+    Self::inscriptions_json(page_config, index, start, start + 1).await
+  }
+
+  async fn inscriptions_json_start_end(
     Extension(page_config): Extension<Arc<PageConfig>>,
     Extension(index): Extension<Arc<Index>>,
     Path(path): Path<(i64, i64)>,
   ) -> ServerResult<String> {
+    Self::inscriptions_json(page_config, index, path.0, path.1).await
+  }
+
+  async fn inscriptions_json(
+    page_config: Arc<PageConfig>,
+    index: Arc<Index>,
+    start: i64,
+    end: i64,
+  ) -> ServerResult<String> {
     const MAX_JSON_INSCRIPTIONS: i64 = 1000;
 
-    let start = path.0;
-    let end = path.1;
     match start.cmp(&end) {
       Ordering::Equal => Err(ServerError::BadRequest("range length == 0".to_string())),
       Ordering::Greater => Err(ServerError::BadRequest("range length < 0".to_string())),
