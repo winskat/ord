@@ -1115,6 +1115,36 @@ impl Index {
     )
   }
 
+  pub(crate) fn delete_transfer_log(&self) -> Result {
+    let wtx = self.database.begin_write().unwrap();
+    wtx.delete_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?;
+    Ok(wtx.commit()?)
+  }
+
+  pub(crate) fn trim_transfer_log(&self, height: u64) -> Result {
+    let wtx = self.begin_write()?;
+    for pair in self.database.begin_read()?.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?.range(..height)? {
+      wtx.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?.remove_all(pair?.0.value())?;
+    }
+    Ok(wtx.commit()?)
+  }
+
+  pub(crate) fn show_transfer_log_stats(&self) -> Result<(u64, Option<u64>, Option<u64>)> {
+    let rtx = self.database.begin_read().unwrap();
+    let table = rtx.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?;
+    let mut iter = table.iter()?;
+    let (rows, first_height, last_height) = (table.len()?, iter.next(), iter.next_back());
+
+    if rows == 0 {
+      Ok((rows, None, None))
+    } else if last_height.is_none() {
+      let height = Some(first_height.unwrap()?.0.value());
+      Ok((rows, height, height))
+    } else {
+      Ok((rows, Some(first_height.unwrap()?.0.value()), Some(last_height.unwrap()?.0.value())))
+    }
+  }
+
   #[cfg(test)]
   fn assert_inscription_location(
     &self,
