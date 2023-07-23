@@ -1,6 +1,15 @@
 Changelog
 =========
 
+[0.8.1-gm1](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm1) - 2023-07-23
+--------------------------------------------------------------------------------
+
+### Changed
+- Merged 0.8.1 from upstream.
+- Recognize and display "text/plain" content type as text inscriptions.
+- Don't try indexing new blocks when there are no new blocks
+- Sleep 10 second between checking for new blocks
+
 [0.8.1](https://github.com/ordinals/ord/releases/tag/0.8.1) - 2023-07-23
 ---------------------------------------------------------------------
 
