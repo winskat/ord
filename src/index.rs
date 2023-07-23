@@ -590,16 +590,13 @@ impl Index {
 
   pub(crate) fn get_inscription_ids_by_height(&self, height: u64) -> Result<Vec<InscriptionId>> {
     let mut ret = Vec::new();
-    for range in self
+    for inscriptionid in self
       .database
       .begin_read()?
       .open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?
-      .range::<&u64>(&height..&(height + 1))?
+      .get(height)?
     {
-      let (_, ids) = range?;
-      for id in ids {
-        ret.push(Entry::load(*id?.value()));
-      }
+      ret.push(Entry::load(*inscriptionid?.value()));
     }
 
     Ok(ret)
