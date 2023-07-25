@@ -120,10 +120,7 @@ impl Send {
       },
     ];
 
-    let alignment = match self.alignment {
-      Some(alignment) => Some(alignment.require_network(options.chain().network()).unwrap()),
-      None => None,
-    };
+    let alignment = self.alignment.map(|alignment| alignment.require_network(options.chain().network()).unwrap());
 
     let unsigned_transaction = TransactionBuilder::build_transaction_with_postage(
       satpoint,

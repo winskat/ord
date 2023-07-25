@@ -1151,24 +1151,20 @@ impl Server {
                   }
                 }
 
-                let sat = if let Some(s) = entry.sat {
-                  Some(SatJson {
-                    number: s.n(),
-                    decimal: s.decimal().to_string(),
-                    degree: s.degree().to_string(),
-                    percentile: s.percentile().to_string(),
-                    name: s.name(),
-                    cycle: s.cycle(),
-                    epoch: s.epoch().0,
-                    period: s.period(),
-                    block: s.height().0,
-                    offset: s.third(),
-                    rarity: s.rarity(),
-                    // timestamp: index.block_time(s.height())?.unix_timestamp(),
-                  })
-                } else {
-                  None
-                };
+                let sat = entry.sat.map(|s| SatJson {
+                  number: s.n(),
+                  decimal: s.decimal().to_string(),
+                  degree: s.degree().to_string(),
+                  percentile: s.percentile().to_string(),
+                  name: s.name(),
+                  cycle: s.cycle(),
+                  epoch: s.epoch().0,
+                  period: s.period(),
+                  block: s.height().0,
+                  offset: s.third(),
+                  rarity: s.rarity(),
+                  // timestamp: index.block_time(s.height())?.unix_timestamp(),
+                });
 
                 let content_type = inscription.content_type();
                 let unbound_suffix = if satpoint.outpoint == unbound_outpoint() {
