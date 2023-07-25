@@ -672,6 +672,7 @@ impl Updater {
     Index::increment_statistic(&wtx, Statistic::Commits, 1)?;
 
     wtx.commit()?;
+    log::info!("Commit finished");
     Ok(())
   }
 }
