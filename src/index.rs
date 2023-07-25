@@ -748,24 +748,24 @@ impl Index {
     }
 
     if outpoints.is_empty() {
-    let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
+      let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
-    for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-      let (key, value) = range?;
-      let mut offset = 0;
-      for chunk in value.value().chunks_exact(11) {
-        let (start, end) = SatRange::load(chunk.try_into().unwrap());
-        if start <= sat && sat < end {
-          return Ok(Some(SatPoint {
-            outpoint: Entry::load(*key.value()),
-            offset: offset + sat - start,
-          }));
+      for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
+        let (key, value) = range?;
+        let mut offset = 0;
+        for chunk in value.value().chunks_exact(11) {
+          let (start, end) = SatRange::load(chunk.try_into().unwrap());
+          if start <= sat && sat < end {
+            return Ok(Some(SatPoint {
+              outpoint: Entry::load(*key.value()),
+              offset: offset + sat - start,
+            }));
+          }
+          offset += end - start;
         }
-        offset += end - start;
       }
-    }
 
-    Ok(None)
+      Ok(None)
     } else {
       for outpoint in outpoints {
         match self.list(*outpoint)? {
@@ -1022,7 +1022,10 @@ impl Index {
     let rtx = self.database.begin_read()?;
     let satpoint_to_id = rtx.open_multimap_table(SATPOINT_TO_INSCRIPTION_ID)?;
     for utxo in utxos.keys() {
-      result.extend(Self::inscriptions_on_output_unordered(&satpoint_to_id, *utxo)?);
+      result.extend(Self::inscriptions_on_output_unordered(
+        &satpoint_to_id,
+        *utxo,
+      )?);
     }
 
     Ok(result)
@@ -1125,8 +1128,15 @@ impl Index {
 
   pub(crate) fn trim_transfer_log(&self, height: u64) -> Result {
     let wtx = self.begin_write()?;
-    for pair in self.database.begin_read()?.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?.range(..height)? {
-      wtx.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?.remove_all(pair?.0.value())?;
+    for pair in self
+      .database
+      .begin_read()?
+      .open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?
+      .range(..height)?
+    {
+      wtx
+        .open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?
+        .remove_all(pair?.0.value())?;
     }
     Ok(wtx.commit()?)
   }
@@ -1143,7 +1153,11 @@ impl Index {
       let height = Some(first_height.unwrap()?.0.value());
       Ok((rows, height, height))
     } else {
-      Ok((rows, Some(first_height.unwrap()?.0.value()), Some(last_height.unwrap()?.0.value())))
+      Ok((
+        rows,
+        Some(first_height.unwrap()?.0.value()),
+        Some(last_height.unwrap()?.0.value()),
+      ))
     }
   }
 
@@ -1705,7 +1719,11 @@ mod tests {
     let context = Context::builder().arg("--index-sats").build();
     context.mine_blocks(1);
     assert_eq!(
-      context.index.find(50 * COIN_VALUE, &Vec::new()).unwrap().unwrap(),
+      context
+        .index
+        .find(50 * COIN_VALUE, &Vec::new())
+        .unwrap()
+        .unwrap(),
       SatPoint {
         outpoint: "30f2f037629c6a21c1f40ed39b9bd6278df39762d68d07f49582b23bcb23386a:0"
           .parse()
@@ -1718,7 +1736,10 @@ mod tests {
   #[test]
   fn find_unmined_sat() {
     let context = Context::builder().arg("--index-sats").build();
-    assert_eq!(context.index.find(50 * COIN_VALUE, &Vec::new()).unwrap(), None);
+    assert_eq!(
+      context.index.find(50 * COIN_VALUE, &Vec::new()).unwrap(),
+      None
+    );
   }
 
   #[test]
@@ -1732,7 +1753,11 @@ mod tests {
     });
     context.mine_blocks(1);
     assert_eq!(
-      context.index.find(50 * COIN_VALUE, &Vec::new()).unwrap().unwrap(),
+      context
+        .index
+        .find(50 * COIN_VALUE, &Vec::new())
+        .unwrap()
+        .unwrap(),
       SatPoint {
         outpoint: OutPoint::new(spend_txid, 0),
         offset: 0,

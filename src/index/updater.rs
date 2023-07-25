@@ -102,77 +102,77 @@ impl Updater {
     };
 
     if starting_height > self.height {
-    let rx = Self::fetch_blocks_from(index, self.height, self.index_sats)?;
+      let rx = Self::fetch_blocks_from(index, self.height, self.index_sats)?;
 
-    let (mut outpoint_sender, mut value_receiver) = Self::spawn_fetcher(index)?;
+      let (mut outpoint_sender, mut value_receiver) = Self::spawn_fetcher(index)?;
 
-    let mut uncommitted = 0;
-    let mut value_cache = HashMap::new();
-    while let Ok(block) = rx.recv() {
-      self.index_block(
-        index,
-        &mut outpoint_sender,
-        &mut value_receiver,
-        &mut wtx,
-        block,
-        &mut value_cache,
-      )?;
+      let mut uncommitted = 0;
+      let mut value_cache = HashMap::new();
+      while let Ok(block) = rx.recv() {
+        self.index_block(
+          index,
+          &mut outpoint_sender,
+          &mut value_receiver,
+          &mut wtx,
+          block,
+          &mut value_cache,
+        )?;
 
-      if let Some(progress_bar) = &mut progress_bar {
-        progress_bar.inc(1);
+        if let Some(progress_bar) = &mut progress_bar {
+          progress_bar.inc(1);
 
-        if progress_bar.position() > progress_bar.length().unwrap() {
-          if let Ok(count) = index.client.get_block_count() {
-            progress_bar.set_length(count + 1);
-          } else {
-            log::warn!("Failed to fetch latest block height");
+          if progress_bar.position() > progress_bar.length().unwrap() {
+            if let Ok(count) = index.client.get_block_count() {
+              progress_bar.set_length(count + 1);
+            } else {
+              log::warn!("Failed to fetch latest block height");
+            }
           }
         }
-      }
 
-      uncommitted += 1;
+        uncommitted += 1;
 
-      if uncommitted == 5000 {
-        self.commit(wtx, value_cache)?;
-        value_cache = HashMap::new();
-        uncommitted = 0;
-        wtx = index.begin_write()?;
-        let height = wtx
-          .open_table(HEIGHT_TO_BLOCK_HASH)?
-          .range(0..)?
-          .next_back()
-          .and_then(|result| result.ok())
-          .map(|(height, _hash)| height.value() + 1)
-          .unwrap_or(0);
-        if height != self.height {
-          // another update has run between committing and beginning the new
-          // write transaction
+        if uncommitted == 5000 {
+          self.commit(wtx, value_cache)?;
+          value_cache = HashMap::new();
+          uncommitted = 0;
+          wtx = index.begin_write()?;
+          let height = wtx
+            .open_table(HEIGHT_TO_BLOCK_HASH)?
+            .range(0..)?
+            .next_back()
+            .and_then(|result| result.ok())
+            .map(|(height, _hash)| height.value() + 1)
+            .unwrap_or(0);
+          if height != self.height {
+            // another update has run between committing and beginning the new
+            // write transaction
+            break;
+          }
+          wtx
+            .open_table(WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP)?
+            .insert(
+              &self.height,
+              &SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .map(|duration| duration.as_millis())
+                .unwrap_or(0),
+            )?;
+        }
+
+        if SHUTTING_DOWN.load(atomic::Ordering::Relaxed) {
           break;
         }
-        wtx
-          .open_table(WRITE_TRANSACTION_STARTING_BLOCK_COUNT_TO_TIMESTAMP)?
-          .insert(
-            &self.height,
-            &SystemTime::now()
-              .duration_since(SystemTime::UNIX_EPOCH)
-              .map(|duration| duration.as_millis())
-              .unwrap_or(0),
-          )?;
       }
 
-      if SHUTTING_DOWN.load(atomic::Ordering::Relaxed) {
-        break;
+      if uncommitted > 0 {
+        self.commit(wtx, value_cache)?;
+      }
+
+      if let Some(progress_bar) = &mut progress_bar {
+        progress_bar.finish_and_clear();
       }
     }
-
-    if uncommitted > 0 {
-      self.commit(wtx, value_cache)?;
-    }
-
-    if let Some(progress_bar) = &mut progress_bar {
-      progress_bar.finish_and_clear();
-    }
-  }
 
     Ok(())
   }
