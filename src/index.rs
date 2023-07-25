@@ -1145,19 +1145,25 @@ impl Index {
     let rtx = self.database.begin_read().unwrap();
     let table = rtx.open_multimap_table(HEIGHT_TO_INSCRIPTION_ID)?;
     let mut iter = table.iter()?;
-    let (rows, first_height, last_height) = (table.len()?, iter.next(), iter.next_back());
 
-    if rows == 0 {
+    let rows = table.len()?;
+
+    let first = iter
+      .next()
+      .and_then(|result| result.ok())
+      .map(|(height, _id)| height.value());
+
+    let last = iter
+      .next_back()
+      .and_then(|result| result.ok())
+      .map(|(height, _id)| height.value());
+
+    if first.is_none() {
       Ok((rows, None, None))
-    } else if last_height.is_none() {
-      let height = Some(first_height.unwrap()?.0.value());
-      Ok((rows, height, height))
+    } else if last.is_none() {
+      Ok((rows, first, first))
     } else {
-      Ok((
-        rows,
-        Some(first_height.unwrap()?.0.value()),
-        Some(last_height.unwrap()?.0.value()),
-      ))
+      Ok((rows, first, last))
     }
   }
 
