@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.1-gm3](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm3) - 2023-07-25
+--------------------------------------------------------------------------------
+
+### Added
+- Add request logging to the server when RUST_LOG=INFO is set.
+- Add `--no-progress-bar` flag to inhibit the display of the progress bar.
+
 [0.8.1-gm2](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm2) - 2023-07-24
 --------------------------------------------------------------------------------
 
