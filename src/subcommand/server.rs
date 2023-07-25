@@ -410,6 +410,7 @@ impl Server {
   }
 
   async fn clock(Extension(index): Extension<Arc<Index>>) -> ServerResult<Response> {
+    log::info!("GET /clock");
     Ok(
       (
         [(
@@ -427,6 +428,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(DeserializeFromStr(sat)): Path<DeserializeFromStr<Sat>>,
   ) -> ServerResult<PageHtml<SatHtml>> {
+    log::info!("GET /sat/{sat}");
     let satpoint = index.rare_sat_satpoint(sat)?;
 
     Ok(
@@ -441,6 +443,7 @@ impl Server {
   }
 
   async fn ordinal(Path(sat): Path<String>) -> Redirect {
+    log::info!("GET /ordinal/{sat}");
     Redirect::to(&format!("/sat/{sat}"))
   }
 
@@ -449,6 +452,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(outpoint): Path<OutPoint>,
   ) -> ServerResult<PageHtml<OutputHtml>> {
+    log::info!("GET /output/{outpoint}");
     let list = if index.has_sat_index()? {
       index.list(outpoint)?
     } else {
@@ -500,6 +504,7 @@ impl Server {
       DeserializeFromStr<Sat>,
     )>,
   ) -> ServerResult<PageHtml<RangeHtml>> {
+    log::info!("GET /range/{start}/{end}");
     match start.cmp(&end) {
       Ordering::Equal => Err(ServerError::BadRequest("empty range".to_string())),
       Ordering::Greater => Err(ServerError::BadRequest(
@@ -510,6 +515,7 @@ impl Server {
   }
 
   async fn rare_txt(Extension(index): Extension<Arc<Index>>) -> ServerResult<RareTxt> {
+    log::info!("GET /rare.txt");
     Ok(RareTxt(index.rare_sat_satpoints()?.ok_or_else(|| {
       ServerError::NotFound(
         "tracking rare sats requires index created with `--index-sats` flag".into(),
@@ -521,6 +527,7 @@ impl Server {
     Extension(page_config): Extension<Arc<PageConfig>>,
     Extension(index): Extension<Arc<Index>>,
   ) -> ServerResult<PageHtml<HomeHtml>> {
+    log::info!("GET /");
     Ok(
       HomeHtml::new(index.blocks(100)?, index.get_homepage_inscriptions()?)
         .page(page_config, index.has_sat_index()?),
@@ -528,6 +535,7 @@ impl Server {
   }
 
   async fn install_script() -> Redirect {
+    log::info!("GET /install.sh");
     Redirect::to("https://raw.githubusercontent.com/casey/ord/master/install.sh")
   }
 
@@ -538,6 +546,7 @@ impl Server {
   ) -> ServerResult<PageHtml<BlockHtml>> {
     let (block, height) = match query {
       BlockQuery::Height(height) => {
+        log::info!("GET /block/{height}/");
         let block = index
           .get_block_by_height(height)?
           .ok_or_not_found(|| format!("block {height}"))?;
@@ -545,6 +554,7 @@ impl Server {
         (block, height)
       }
       BlockQuery::Hash(hash) => {
+        log::info!("GET /block/{hash}/");
         let info = index
           .block_header_info(hash)?
           .ok_or_not_found(|| format!("block {hash}"))?;
@@ -568,6 +578,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(height): Path<u64>,
   ) -> ServerResult<String> {
+    log::info!("GET /transfers/{height}");
     let mut ret = String::from("");
     for inscription_id in index.get_inscription_ids_by_height(height)? {
       let satpoint = index
@@ -601,6 +612,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(txid): Path<Txid>,
   ) -> ServerResult<PageHtml<TransactionHtml>> {
+    log::info!("GET /tx/{txid}");
     let inscription = index.get_inscription_by_id(txid.into())?;
 
     let blockhash = index.get_transaction_blockhash(txid)?;
@@ -619,6 +631,7 @@ impl Server {
   }
 
   async fn status(Extension(index): Extension<Arc<Index>>) -> (StatusCode, &'static str) {
+    log::info!("GET /status");
     if index.is_reorged() {
       (
         StatusCode::OK,
@@ -636,6 +649,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Query(search): Query<Search>,
   ) -> ServerResult<Redirect> {
+    log::info!("GET /search");
     Self::search(&index, &search.query).await
   }
 
@@ -643,6 +657,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(search): Path<Search>,
   ) -> ServerResult<Redirect> {
+    log::info!("GET /search/{}", search.query);
     Self::search(&index, &search.query).await
   }
 
@@ -675,6 +690,7 @@ impl Server {
   }
 
   async fn favicon(user_agent: Option<TypedHeader<UserAgent>>) -> ServerResult<Response> {
+    log::info!("GET /favicon.ico");
     if user_agent
       .map(|user_agent| {
         user_agent.as_str().contains("Safari/")
@@ -706,6 +722,7 @@ impl Server {
     Extension(page_config): Extension<Arc<PageConfig>>,
     Extension(index): Extension<Arc<Index>>,
   ) -> ServerResult<Response> {
+    log::info!("GET /feed.xml");
     let mut builder = rss::ChannelBuilder::default();
 
     let chain = page_config.chain;
@@ -745,6 +762,7 @@ impl Server {
   }
 
   async fn static_asset(Path(path): Path<String>) -> ServerResult<Response> {
+    log::info!("GET /static/{path}");
     let content = StaticAssets::get(if let Some(stripped) = path.strip_prefix('/') {
       stripped
     } else {
@@ -762,10 +780,12 @@ impl Server {
   }
 
   async fn block_count(Extension(index): Extension<Arc<Index>>) -> ServerResult<String> {
+    log::info!("GET /blockcount");
     Ok(index.block_count()?.to_string())
   }
 
   async fn block_height(Extension(index): Extension<Arc<Index>>) -> ServerResult<String> {
+    log::info!("GET /blockheight");
     Ok(
       index
         .block_height()?
@@ -775,6 +795,7 @@ impl Server {
   }
 
   async fn block_hash(Extension(index): Extension<Arc<Index>>) -> ServerResult<String> {
+    log::info!("GET /blockhash");
     Ok(
       index
         .block_hash(None)?
@@ -787,6 +808,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(height): Path<u64>,
   ) -> ServerResult<String> {
+    log::info!("GET /blockhash/{height}");
     Ok(
       index
         .block_hash(Some(height))?
@@ -796,6 +818,7 @@ impl Server {
   }
 
   async fn block_time(Extension(index): Extension<Arc<Index>>) -> ServerResult<String> {
+    log::info!("GET /blocktime");
     Ok(
       index
         .block_time(index.block_height()?.ok_or_not_found(|| "blocktime")?)?
@@ -809,6 +832,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(path): Path<(u64, usize, usize)>,
   ) -> Result<PageHtml<InputHtml>, ServerError> {
+    log::info!("GET /input/{}/{}/{}", path.0, path.1, path.2);
     let not_found = || format!("input /{}/{}/{}", path.0, path.1, path.2);
 
     let block = index
@@ -831,10 +855,12 @@ impl Server {
   }
 
   async fn faq() -> Redirect {
+    log::info!("GET /faq");
     Redirect::to("https://docs.ordinals.com/faq/")
   }
 
   async fn bounties() -> Redirect {
+    log::info!("GET /bounties");
     Redirect::to("https://docs.ordinals.com/bounty/")
   }
 
@@ -843,6 +869,7 @@ impl Server {
     Extension(config): Extension<Arc<Config>>,
     Path(inscription_id): Path<InscriptionId>,
   ) -> ServerResult<Response> {
+    log::info!("GET /content/{inscription_id}");
     if config.is_hidden(inscription_id) {
       return Ok(PreviewUnknownHtml.into_response());
     }
@@ -896,6 +923,7 @@ impl Server {
     Extension(config): Extension<Arc<Config>>,
     Path(inscription_id): Path<InscriptionId>,
   ) -> ServerResult<Response> {
+    log::info!("GET /preview/{inscription_id}");
     if config.is_hidden(inscription_id) {
       return Ok(PreviewUnknownHtml.into_response());
     }
@@ -953,6 +981,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(inscription_id): Path<InscriptionId>,
   ) -> ServerResult<PageHtml<InscriptionHtml>> {
+    log::info!("GET /inscription/{inscription_id}");
     let entry = index
       .get_inscription_entry(inscription_id)?
       .ok_or_not_found(|| format!("inscription {inscription_id}"))?;
@@ -1006,6 +1035,7 @@ impl Server {
     Extension(page_config): Extension<Arc<PageConfig>>,
     Extension(index): Extension<Arc<Index>>,
   ) -> ServerResult<PageHtml<InscriptionsHtml>> {
+    log::info!("GET /inscriptions");
     Self::inscriptions_inner(page_config, index, None).await
   }
 
@@ -1014,6 +1044,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(from): Path<i64>,
   ) -> ServerResult<PageHtml<InscriptionsHtml>> {
+    log::info!("GET /inscriptions/{from}");
     Self::inscriptions_inner(page_config, index, Some(from)).await
   }
 
@@ -1038,6 +1069,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(start): Path<i64>,
   ) -> ServerResult<String> {
+    log::info!("GET /inscriptions_json/{start}");
     Self::inscriptions_json(page_config, index, start, start + 1).await
   }
 
@@ -1046,6 +1078,7 @@ impl Server {
     Extension(index): Extension<Arc<Index>>,
     Path(path): Path<(i64, i64)>,
   ) -> ServerResult<String> {
+    log::info!("GET /inscriptions_json/{}/{}", path.0, path.1);
     Self::inscriptions_json(page_config, index, path.0, path.1).await
   }
 
