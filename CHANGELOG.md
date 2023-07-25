@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm4](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm4) - 2023-07-25
+--------------------------------------------------------------------------------
+
+### Added
+- Add `/stats` endpoint to get the highest block indexed and the range of inscriptions that exist.
+
 [0.8.1-gm3](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm3) - 2023-07-25
 --------------------------------------------------------------------------------
 
