@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm5](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm5) - 2023-07-25
+--------------------------------------------------------------------------------
+
+### Added
+- Tell the user if their database is corrupted before starting to repair it.
+
 [0.8.1-gm4](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm4) - 2023-07-25
 --------------------------------------------------------------------------------
 
