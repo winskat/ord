@@ -784,10 +784,11 @@ impl Server {
   }
 
   async fn static_asset(Path(path): Path<String>) -> ServerResult<Response> {
-    log::info!("GET /static/{path}");
     let content = StaticAssets::get(if let Some(stripped) = path.strip_prefix('/') {
+      log::info!("GET /static/{stripped}");
       stripped
     } else {
+      log::info!("GET /static/{path}");
       &path
     })
     .ok_or_not_found(|| format!("asset {path}"))?;
