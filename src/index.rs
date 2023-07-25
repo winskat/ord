@@ -64,6 +64,7 @@ pub(crate) struct Index {
   genesis_block_coinbase_transaction: Transaction,
   genesis_block_coinbase_txid: Txid,
   height_limit: Option<u64>,
+  no_progress_bar: bool,
   options: Options,
   reorged: AtomicBool,
 }
@@ -259,6 +260,7 @@ impl Index {
       genesis_block_coinbase_transaction,
       height_limit: options.height_limit,
       reorged: AtomicBool::new(false),
+      no_progress_bar: options.no_progress_bar,
       options: options.clone(),
     })
   }

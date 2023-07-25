@@ -86,6 +86,7 @@ impl Updater {
     let starting_height = index.client.get_block_count()? + 1;
 
     let mut progress_bar = if cfg!(test)
+      || index.no_progress_bar
       || log_enabled!(log::Level::Info)
       || starting_height <= self.height
       || integration_test()
