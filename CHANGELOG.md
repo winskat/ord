@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm6](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm6) - 2023-07-25
+--------------------------------------------------------------------------------
+
+### Changed
+- Merge from upstream. `wallet inscriptions` now labels the postage amount as `postage` not as `amount`.
+
 [0.8.1-gm5](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm5) - 2023-07-25
 --------------------------------------------------------------------------------
 
