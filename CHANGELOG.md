@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.1-gm7](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm7) - 2023-07-29
+--------------------------------------------------------------------------------
+
+### Changed
+- Move the check for being able to write a file to before we send the commit tx.
+- Merge from upstream.
+
 [0.8.1-gm6](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm6) - 2023-07-25
 --------------------------------------------------------------------------------
 
