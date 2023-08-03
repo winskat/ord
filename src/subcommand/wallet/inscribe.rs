@@ -117,9 +117,9 @@ pub(crate) struct Inscribe {
   pub(crate) csv: Option<PathBuf>,
   #[clap(
     long,
-    help = "Create a 'cursed' inscription (with an unknown even 0x42 tag)"
+    help = "Create a 'cursed' inscription (with an unknown even OP_66 tag)"
   )]
-  pub(crate) cursed: bool,
+  pub(crate) cursed66: bool,
   #[clap(long, help = "Allow inscription on sats that are already inscribed.")]
   pub(crate) allow_reinscribe: bool,
   #[clap(long, help = "Use the same recovery key for all inscriptions.")]
@@ -261,7 +261,7 @@ impl Inscribe {
           Some(postage) => postage,
           _ => TransactionBuilder::DEFAULT_TARGET_POSTAGE,
         },
-        self.cursed,
+        self.cursed66,
         self.allow_reinscribe,
         self.single_key,
       )?;
@@ -511,7 +511,7 @@ impl Inscribe {
     max_inputs: Option<usize>,
     no_limit: bool,
     postage: Amount,
-    cursed: bool,
+    cursed66: bool,
     allow_reinscribe: bool,
     single_key: bool,
   ) -> Result<(SatPoint, Transaction, Vec<Transaction>, Vec<TweakedKeyPair>)> {
@@ -570,7 +570,7 @@ impl Inscribe {
         ScriptBuf::builder()
           .push_slice(public_key.serialize())
           .push_opcode(opcodes::all::OP_CHECKSIG),
-        cursed,
+        cursed66,
       );
 
       let taproot_spend_info = TaprootBuilder::new()
