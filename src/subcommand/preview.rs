@@ -91,6 +91,7 @@ impl Preview {
           no_limit: false,
           destination: Vec::new(),
           alignment: None,
+          cursed: false,
           change: None,
           postage: Some(TransactionBuilder::DEFAULT_TARGET_POSTAGE),
           max_inputs: None,
