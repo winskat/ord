@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.1-gm9](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm9) - 2023-08-05
+--------------------------------------------------------------------------------
+
+### Added
+- Add `--address` flag to `wallet inscriptions` to filter inscriptions by address.
+- Add an index to speed up `ord find`. Enable it with `--index-utxos` when creating `index.redb`.
+
 [0.8.1-gm8](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm8) - 2023-08-03
 --------------------------------------------------------------------------------
 
