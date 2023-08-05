@@ -402,9 +402,23 @@ impl Inscribe {
 
         if !signed_reveal_tx.complete {
           return Err(anyhow!(
-            "error signing commit tx: {:?}",
+            "error signing reveal tx: {:?}",
             signed_reveal_tx.errors
           ));
+        }
+
+        let reveal_weight = client
+          .call::<DecodeRawTransactionOutput>(
+            "decoderawtransaction",
+            &[signed_reveal_tx.hex.raw_hex().into()],
+          )?
+          .weight;
+
+        if !self.no_limit && reveal_weight > bitcoin::Weight::from_wu(MAX_STANDARD_TX_WEIGHT.into())
+        {
+          bail!(
+            "reveal transaction weight greater than {MAX_STANDARD_TX_WEIGHT} (MAX_STANDARD_TX_WEIGHT): {reveal_weight}"
+          );
         }
 
         signed_reveal_txs.push((reveal_tx, signed_reveal_tx.hex));
