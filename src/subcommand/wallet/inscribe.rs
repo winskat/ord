@@ -630,7 +630,7 @@ impl Inscribe {
         .keys()
         .find(|outpoint| {
           !inscribed_utxos.contains(outpoint)
-            && (cursed_outpoint.is_none() || **outpoint != cursed_outpoint.clone().unwrap())
+            && (cursed_outpoint.is_none() || **outpoint != cursed_outpoint.unwrap())
         })
         .map(|outpoint| SatPoint {
           outpoint: *outpoint,
@@ -707,9 +707,9 @@ impl Inscribe {
         value: 0,
       }];
 
-      if cursed_outpoint.is_some() {
+      if let Some(cursed_outpoint) = cursed_outpoint {
         let cursed_txout = cursed_txout.as_ref().unwrap();
-        inputs.insert(0, cursed_outpoint.unwrap());
+        inputs.insert(0, cursed_outpoint);
         outputs.insert(
           0,
           TxOut {
@@ -733,8 +733,8 @@ impl Inscribe {
     }
 
     let mut utxos_clone = utxos.clone();
-    if cursed_outpoint.is_some() {
-      utxos_clone.remove(&cursed_outpoint.unwrap());
+    if let Some(cursed_outpoint) = cursed_outpoint {
+      utxos_clone.remove(&cursed_outpoint);
     }
 
     tprintln!("[make commit]");
@@ -776,9 +776,9 @@ impl Inscribe {
         value: output.value,
       }];
 
-      if cursed_outpoint.is_some() {
+      if let Some(cursed_outpoint) = cursed_outpoint {
         let cursed_txout = cursed_txout.as_ref().unwrap();
-        inputs.insert(0, cursed_outpoint.unwrap());
+        inputs.insert(0, cursed_outpoint);
         outputs.insert(
           0,
           TxOut {
@@ -835,7 +835,7 @@ impl Inscribe {
       let signature = secp256k1.sign_schnorr(
         &secp256k1::Message::from_slice(signature_hash.as_ref())
           .expect("should be cryptographically secure hash"),
-        &key_pair,
+        key_pair,
       );
 
       let witness = sighash_cache
@@ -992,6 +992,8 @@ mod tests {
         [commit_address, change(1)],
         reveal_address,
         None,
+        None,
+        None,
         FeeRate::try_from(1.0).unwrap(),
         FeeRate::try_from(1.0).unwrap(),
         None,
@@ -1028,6 +1030,8 @@ mod tests {
       utxos.into_iter().collect(),
       [commit_address, change(1)],
       reveal_address,
+      None,
+      None,
       None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
@@ -1069,6 +1073,8 @@ mod tests {
       utxos.into_iter().collect(),
       [commit_address, change(1)],
       reveal_address,
+      None,
+      None,
       None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
@@ -1118,6 +1124,8 @@ mod tests {
       [commit_address, change(1)],
       reveal_address,
       None,
+      None,
+      None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
       None,
@@ -1160,6 +1168,8 @@ mod tests {
         utxos.into_iter().collect(),
         [commit_address, change(1)],
         reveal_address,
+        None,
+        None,
         None,
         FeeRate::try_from(fee_rate).unwrap(),
         FeeRate::try_from(fee_rate).unwrap(),
@@ -1232,6 +1242,8 @@ mod tests {
         [commit_address, change(1)],
         reveal_address,
         None,
+        None,
+        None,
         FeeRate::try_from(commit_fee_rate).unwrap(),
         FeeRate::try_from(fee_rate).unwrap(),
         None,
@@ -1287,6 +1299,8 @@ mod tests {
       [commit_address, change(1)],
       reveal_address,
       None,
+      None,
+      None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
       None,
@@ -1324,6 +1338,8 @@ mod tests {
         utxos.into_iter().collect(),
         [commit_address, change(1)],
         reveal_address,
+        None,
+        None,
         None,
         FeeRate::try_from(1.0).unwrap(),
         FeeRate::try_from(1.0).unwrap(),

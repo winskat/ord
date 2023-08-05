@@ -47,7 +47,7 @@ impl Inscriptions {
 
     let address = match self.address {
       Some(address) => Some(address.require_network(options.chain().network())?),
-      None => None
+      None => None,
     };
 
     for (location, inscription) in inscriptions {
@@ -63,7 +63,7 @@ impl Inscriptions {
               .unwrap();
 
             options.chain().address_from_script(&output.script_pubkey)? == address
-          },
+          }
           None => true,
         } {
           let entry = index
