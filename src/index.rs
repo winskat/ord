@@ -1,8 +1,9 @@
 use {
   self::{
     entry::{
-      BlockHashValue, Entry, InscriptionEntry, InscriptionEntryValue, InscriptionIdValue,
-      OutPointValue, SatPointValue, SatRange,
+      outpoint_prefix_end, BlockHashValue, Entry, InscriptionEntry, InscriptionEntryValue,
+      InscriptionIdValue, OutPointPrefix, OutPointPrefixValue, OutPointValue, SatPointValue,
+      SatRange,
     },
     updater::Updater,
   },
@@ -48,6 +49,7 @@ define_table! { INSCRIPTION_ID_TO_INSCRIPTION_ENTRY, &InscriptionIdValue, Inscri
 define_table! { INSCRIPTION_ID_TO_SATPOINT, &InscriptionIdValue, &SatPointValue }
 define_table! { INSCRIPTION_NUMBER_TO_INSCRIPTION_ID, i64, &InscriptionIdValue }
 define_table! { OUTPOINT_TO_SAT_RANGES, &OutPointValue, &[u8] }
+define_table! { SAT_TO_OUTPOINT, u64, &OutPointPrefixValue }
 define_table! { OUTPOINT_TO_VALUE, &OutPointValue, u64}
 define_table! { REINSCRIPTION_ID_TO_SEQUENCE_NUMBER, &InscriptionIdValue, u64 }
 define_multimap_table! { SATPOINT_TO_INSCRIPTION_ID, &SatPointValue, &InscriptionIdValue }
@@ -243,9 +245,13 @@ impl Index {
         tx.open_table(STATISTIC_TO_COUNT)?
           .insert(&Statistic::Schema.key(), &SCHEMA_VERSION)?;
 
-        if options.index_sats {
+        if options.index_sats || options.index_utxos {
           tx.open_table(OUTPOINT_TO_SAT_RANGES)?
             .insert(&OutPoint::null().store(), [].as_slice())?;
+          if options.index_utxos {
+            tx.open_table(SAT_TO_OUTPOINT)?
+              .insert(0, &OutPoint::null().store().store())?;
+          }
         }
 
         tx.commit()?;
@@ -331,6 +337,14 @@ impl Index {
 
   pub(crate) fn has_sat_index(&self) -> Result<bool> {
     match self.begin_read()?.0.open_table(OUTPOINT_TO_SAT_RANGES) {
+      Ok(_) => Ok(true),
+      Err(redb::TableError::TableDoesNotExist(_)) => Ok(false),
+      Err(err) => Err(err.into()),
+    }
+  }
+
+  pub(crate) fn has_utxo_index(&self) -> Result<bool> {
+    match self.begin_read()?.0.open_table(SAT_TO_OUTPOINT) {
       Ok(_) => Ok(true),
       Err(redb::TableError::TableDoesNotExist(_)) => Ok(false),
       Err(err) => Err(err.into()),
@@ -754,20 +768,60 @@ impl Index {
     }
 
     if outpoints.is_empty() {
-      let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
+      if self.has_utxo_index()? {
+        let sat_to_outpoint = rtx.0.open_table(SAT_TO_OUTPOINT)?;
+        /*
+         *      for outpoint in sat_to_outpoint.range::<u64>(0..)? {
+         *        let (sat, value) = outpoint?;
+         *        tprintln!("{:?} {}", OutPointPrefix::load(*value.value()), sat.value(),);
+         *      }
+         */
+        let value = *sat_to_outpoint
+          .range::<u64>(0..=sat)?
+          .next_back()
+          .unwrap()?
+          .1
+          .value();
+        let first_outpoint = OutPointPrefix::load(value);
+        let last_outpoint = outpoint_prefix_end(value);
 
-      for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-        let (key, value) = range?;
-        let mut offset = 0;
-        for chunk in value.value().chunks_exact(11) {
-          let (start, end) = SatRange::load(chunk.try_into().unwrap());
-          if start <= sat && sat < end {
-            return Ok(Some(SatPoint {
-              outpoint: Entry::load(*key.value()),
-              offset: offset + sat - start,
-            }));
+        for range in self
+          .database
+          .begin_read()?
+          .open_table(OUTPOINT_TO_SAT_RANGES)?
+          .range::<&[u8; 36]>(&first_outpoint..=&last_outpoint)?
+        {
+          let (key, value) = range?;
+          let outpoint = Entry::load(*key.value());
+          tprintln!("found matching outpoint: {:?}", outpoint);
+          let mut offset = 0;
+          for chunk in value.value().chunks_exact(11) {
+            let (start, end) = SatRange::load(chunk.try_into().unwrap());
+            if start <= sat && sat < end {
+              return Ok(Some(SatPoint {
+                outpoint,
+                offset: offset + sat - start,
+              }));
+            }
+            offset += end - start;
           }
-          offset += end - start;
+        }
+      } else {
+        let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
+
+        for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
+          let (key, value) = range?;
+          let mut offset = 0;
+          for chunk in value.value().chunks_exact(11) {
+            let (start, end) = SatRange::load(chunk.try_into().unwrap());
+            if start <= sat && sat < end {
+              return Ok(Some(SatPoint {
+                outpoint: Entry::load(*key.value()),
+                offset: offset + sat - start,
+              }));
+            }
+            offset += end - start;
+          }
         }
       }
 
@@ -815,29 +869,117 @@ impl Index {
       let mut remaining_sats = search_end - search_start;
       let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
-      for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-        let (key, value) = range?;
-        let mut offset = 0;
-        for chunk in value.value().chunks_exact(11) {
-          let (start, end) = SatRange::load(chunk.try_into().unwrap());
-          if start < search_end && search_start < end {
-            let overlap_start = cmp::max(start, search_start);
-            let overlap_end = cmp::min(search_end, end);
-            result.push(FindRangeOutput {
-              start: overlap_start,
-              size: overlap_end - overlap_start,
-              satpoint: SatPoint {
-                outpoint: Entry::load(*key.value()),
-                offset: offset + overlap_start - start,
-              },
-            });
+      if self.has_utxo_index()? {
+        let sat_to_outpoint = rtx.0.open_table(SAT_TO_OUTPOINT)?;
 
-            remaining_sats -= overlap_end - overlap_start;
-            if remaining_sats == 0 {
-              break;
+        // loop through all the sats backwards from the end of the search range
+        'outer: for range in sat_to_outpoint.range::<u64>(0..search_end)?.rev() {
+          let (sat, value) = range?;
+          let sat = sat.value();
+          let value = *value.value();
+          let first_outpoint = OutPointPrefix::load(value);
+          let last_outpoint = outpoint_prefix_end(value);
+          tprintln!("| sat {} value {:02x?}", sat, value);
+
+          // loop through all the outputs that match the 2 bytes we looked up
+          'inner: for range in
+            outpoint_to_sat_ranges.range::<&[u8; 36]>(&first_outpoint..=&last_outpoint)?
+          {
+            let (key, value) = range?;
+            let mut offset = 0;
+            tprintln!(
+              "| | found output: {:?}",
+              <OutPoint as Entry>::load(*key.value())
+            );
+
+            // loop through the ranges in the output
+            for chunk in value.value().chunks_exact(11) {
+              let (start, end) = SatRange::load(chunk.try_into().unwrap());
+
+              tprintln!("| | | found range in output: {} - {}", start, end);
+
+              // our range will start with the key we found in SAT_TO_OUTPOINT
+              if start == sat {
+                tprintln!("| | | this is our range");
+                if start < search_end && search_start < end {
+                  let overlap_start = cmp::max(start, search_start);
+                  let overlap_end = cmp::min(search_end, end);
+                  tprintln!(
+                    "| | | it overlaps from {} to {}",
+                    overlap_start,
+                    overlap_end
+                  );
+                  result.insert(
+                    0,
+                    FindRangeOutput {
+                      start: overlap_start,
+                      size: overlap_end - overlap_start,
+                      satpoint: SatPoint {
+                        outpoint: Entry::load(*key.value()),
+                        offset: offset + overlap_start - start,
+                      },
+                    },
+                  );
+
+                  remaining_sats -= overlap_end - overlap_start;
+                  tprintln!(
+                    "| | | remaining down by {} to {}",
+                    overlap_end - overlap_start,
+                    remaining_sats
+                  );
+
+                  if remaining_sats == 0 {
+                    tprintln!("| | | should break 'outer;");
+                    break 'outer;
+                  }
+                } else {
+                  panic!("no overlap");
+                }
+
+                // we found our range. we don't need to look at the other outputs with the same 2 byte start
+                break 'inner;
+              } else {
+                tprintln!("| | | not our range");
+              }
+
+              tprintln!(
+                "| | | offset up {} from {} to {}",
+                end - start,
+                offset,
+                offset + end - start
+              );
+              offset += end - start;
+            } // loop 3 - for each range in the output
+            tprintln!("| | that's it for this output - try the next output");
+          } // loop 2 - for each output that fits the pattern
+          tprintln!("| that's all the outputs - try the next sat");
+        } // loop 1 - for each 2 sat and 2 byte pattern
+        tprintln!("that's all the sats");
+      } else {
+        for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
+          let (key, value) = range?;
+          let mut offset = 0;
+          for chunk in value.value().chunks_exact(11) {
+            let (start, end) = SatRange::load(chunk.try_into().unwrap());
+            if start < search_end && search_start < end {
+              let overlap_start = cmp::max(start, search_start);
+              let overlap_end = cmp::min(search_end, end);
+              result.push(FindRangeOutput {
+                start: overlap_start,
+                size: overlap_end - overlap_start,
+                satpoint: SatPoint {
+                  outpoint: Entry::load(*key.value()),
+                  offset: offset + overlap_start - start,
+                },
+              });
+
+              remaining_sats -= overlap_end - overlap_start;
+              if remaining_sats == 0 {
+                break;
+              }
             }
+            offset += end - start;
           }
-          offset += end - start;
         }
       }
     } else {
