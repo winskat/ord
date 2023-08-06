@@ -15,7 +15,7 @@ use {
   indicatif::{ProgressBar, ProgressStyle},
   log::log_enabled,
   redb::{
-    Database, MultimapTable, MultimapTableDefinition, ReadableMultimapTable, ReadableTable, Table,
+    CompactionError, Database, MultimapTable, MultimapTableDefinition, ReadableMultimapTable, ReadableTable, Table,
     TableDefinition, WriteTransaction,
   },
   std::collections::HashMap,
@@ -1266,6 +1266,10 @@ impl Index {
         .get(&inscription_id.store())?
         .map(|value| InscriptionEntry::load(value.value())),
     )
+  }
+
+  pub(crate) fn compact_db(&mut self) -> Result<bool, CompactionError> {
+    self.database.compact()
   }
 
   pub(crate) fn delete_transfer_log(&self) -> Result {
