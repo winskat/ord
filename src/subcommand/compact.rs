@@ -10,5 +10,5 @@ pub(crate) fn run(options: Options) -> Result {
     false => println!("db didn't need compacting"),
   }
 
-  return Ok(());
+  Ok(())
 }
