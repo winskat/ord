@@ -758,105 +758,16 @@ impl Index {
     )
   }
 
-  pub(crate) fn find(&self, sat: u64, outpoints: &Vec<OutPoint>) -> Result<Option<SatPoint>> {
-    self.require_sat_index("find")?;
-
-    let rtx = self.begin_read()?;
-
-    if rtx.block_count()? <= Sat(sat).height().n() {
-      return Ok(None);
-    }
-
-    if outpoints.is_empty() {
-      if self.has_utxo_index()? {
-        let sat_to_outpoint = rtx.0.open_table(SAT_TO_OUTPOINT)?;
-        /*
-         *      for outpoint in sat_to_outpoint.range::<u64>(0..)? {
-         *        let (sat, value) = outpoint?;
-         *        tprintln!("{:?} {}", OutPointPrefix::load(*value.value()), sat.value(),);
-         *      }
-         */
-        let value = *sat_to_outpoint
-          .range::<u64>(0..=sat)?
-          .next_back()
-          .unwrap()?
-          .1
-          .value();
-        let first_outpoint = OutPointPrefix::load(value);
-        let last_outpoint = outpoint_prefix_end(value);
-
-        for range in self
-          .database
-          .begin_read()?
-          .open_table(OUTPOINT_TO_SAT_RANGES)?
-          .range::<&[u8; 36]>(&first_outpoint..=&last_outpoint)?
-        {
-          let (key, value) = range?;
-          let outpoint = Entry::load(*key.value());
-          tprintln!("found matching outpoint: {:?}", outpoint);
-          let mut offset = 0;
-          for chunk in value.value().chunks_exact(11) {
-            let (start, end) = SatRange::load(chunk.try_into().unwrap());
-            if start <= sat && sat < end {
-              return Ok(Some(SatPoint {
-                outpoint,
-                offset: offset + sat - start,
-              }));
-            }
-            offset += end - start;
-          }
-        }
-      } else {
-        let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
-
-        for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
-          let (key, value) = range?;
-          let mut offset = 0;
-          for chunk in value.value().chunks_exact(11) {
-            let (start, end) = SatRange::load(chunk.try_into().unwrap());
-            if start <= sat && sat < end {
-              return Ok(Some(SatPoint {
-                outpoint: Entry::load(*key.value()),
-                offset: offset + sat - start,
-              }));
-            }
-            offset += end - start;
-          }
-        }
-      }
-
-      Ok(None)
-    } else {
-      for outpoint in outpoints {
-        match self.list(*outpoint)? {
-          Some(crate::index::List::Unspent(ranges)) => {
-            let mut offset = 0;
-            for (start, end) in ranges {
-              if start <= sat && sat < end {
-                return Ok(Some(SatPoint {
-                  outpoint: *outpoint,
-                  offset: offset + sat - start,
-                }));
-              }
-              offset += end - start;
-            }
-            Ok::<(), Error>(())
-          }
-          Some(crate::index::List::Spent) => Err(anyhow!("output spent.")),
-          None => Err(anyhow!("output not found")),
-        }?;
-      }
-      Ok(None)
-    }
-  }
-
-  pub(crate) fn find_range(
+  pub(crate) fn find(
     &self,
-    search_start: u64,
-    search_end: u64,
+    search_start: Sat,
+    search_end: Sat,
     outpoints: &Vec<OutPoint>,
   ) -> Result<Option<Vec<FindRangeOutput>>> {
     self.require_sat_index("find")?;
+
+    let search_start = search_start.0;
+    let search_end = search_end.0;
 
     let rtx = self.begin_read()?;
 
@@ -866,6 +777,7 @@ impl Index {
 
     let mut result = Vec::new();
     if outpoints.is_empty() {
+      // no outpoints provided; search the whole space
       let mut remaining_sats = search_end - search_start;
       let outpoint_to_sat_ranges = rtx.0.open_table(OUTPOINT_TO_SAT_RANGES)?;
 
@@ -909,8 +821,7 @@ impl Index {
                     overlap_start,
                     overlap_end
                   );
-                  result.insert(
-                    0,
+                  result.push(
                     FindRangeOutput {
                       start: overlap_start,
                       size: overlap_end - overlap_start,
@@ -955,6 +866,7 @@ impl Index {
           tprintln!("| that's all the outputs - try the next sat");
         } // loop 1 - for each 2 sat and 2 byte pattern
         tprintln!("that's all the sats");
+        result.reverse();
       } else {
         for range in outpoint_to_sat_ranges.range::<&[u8; 36]>(&[0; 36]..)? {
           let (key, value) = range?;
@@ -983,6 +895,9 @@ impl Index {
         }
       }
     } else {
+      // outpoints provided; only search the outpoints
+      let mut result_map = BTreeMap::new();
+
       for outpoint in outpoints {
         match self.list(*outpoint)? {
           Some(crate::index::List::Unspent(ranges)) => {
@@ -991,14 +906,15 @@ impl Index {
               if start < search_end && search_start < end {
                 let overlap_start = cmp::max(start, search_start);
                 let overlap_end = cmp::min(search_end, end);
-                result.push(FindRangeOutput {
-                  start: overlap_start,
-                  size: overlap_end - overlap_start,
-                  satpoint: SatPoint {
-                    outpoint: *outpoint,
-                    offset: offset + overlap_start - start,
-                  },
-                });
+                result_map.insert(overlap_start,
+                                  FindRangeOutput {
+                                    start: overlap_start,
+                                    size: overlap_end - overlap_start,
+                                    satpoint: SatPoint {
+                                      outpoint: *outpoint,
+                                      offset: offset + overlap_start - start,
+                                    },
+                                  });
               }
               offset += end - start;
             }
@@ -1008,6 +924,8 @@ impl Index {
           None => Err(anyhow!("output not found")),
         }?;
       }
+
+      result = result_map.into_values().collect();
     }
 
     Ok(Some(result))

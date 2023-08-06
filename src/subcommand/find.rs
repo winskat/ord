@@ -4,8 +4,10 @@ use super::*;
 pub(crate) struct Find {
   #[clap(long, help = "Only look in specified outpoint(s).")]
   outpoint: Vec<OutPoint>,
+  #[clap(long, help = "Read a list of sats and ranges to find from a file. One sat or range per line. Ranges written as <start>-<end>.")]
+  file: Option<PathBuf>,
   #[clap(help = "Find output and offset of <SAT>.")]
-  sat: Sat,
+  sat: Option<Sat>,
   #[clap(help = "Find output and offset of all sats in the range <SAT>-<END>.")]
   end: Option<Sat>,
 }
@@ -21,10 +23,15 @@ impl Find {
 
     index.update()?;
 
-    match self.end {
-      Some(end) => {
-        if self.sat < end {
-          match index.find_range(self.sat.0, end.0, &self.outpoint)? {
+    match self.sat {
+      Some(sat) => {
+        let end = match self.end {
+          Some(end) => end,
+          None => sat + 1,
+        };
+
+        if sat < end {
+          match index.find(sat, end, &self.outpoint)? {
             Some(result) => {
               print_json(result)?;
               Ok(())
@@ -35,18 +42,7 @@ impl Find {
           Err(anyhow!("range is empty"))
         }
       }
-
-      None => match index.find(self.sat.0, &self.outpoint)? {
-        Some(satpoint) => {
-          print_json(Output { satpoint })?;
-          Ok(())
-        }
-        None => Err(anyhow!(if self.outpoint.is_empty() {
-          "sat has not been mined as of index height"
-        } else {
-          "sat was not found in satpoint(s)"
-        })),
-      },
+      None => Err(anyhow!("no sat provided")),
     }
   }
 }
