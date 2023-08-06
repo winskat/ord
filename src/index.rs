@@ -15,8 +15,8 @@ use {
   indicatif::{ProgressBar, ProgressStyle},
   log::log_enabled,
   redb::{
-    CompactionError, Database, MultimapTable, MultimapTableDefinition, ReadableMultimapTable, ReadableTable, Table,
-    TableDefinition, WriteTransaction,
+    CompactionError, Database, MultimapTable, MultimapTableDefinition, ReadableMultimapTable,
+    ReadableTable, Table, TableDefinition, WriteTransaction,
   },
   std::collections::HashMap,
   std::io::{BufWriter, Read, Write},
@@ -821,16 +821,14 @@ impl Index {
                     overlap_start,
                     overlap_end
                   );
-                  result.push(
-                    FindRangeOutput {
-                      start: overlap_start,
-                      size: overlap_end - overlap_start,
-                      satpoint: SatPoint {
-                        outpoint: Entry::load(*key.value()),
-                        offset: offset + overlap_start - start,
-                      },
+                  result.push(FindRangeOutput {
+                    start: overlap_start,
+                    size: overlap_end - overlap_start,
+                    satpoint: SatPoint {
+                      outpoint: Entry::load(*key.value()),
+                      offset: offset + overlap_start - start,
                     },
-                  );
+                  });
 
                   remaining_sats -= overlap_end - overlap_start;
                   tprintln!(
@@ -906,15 +904,17 @@ impl Index {
               if start < search_end && search_start < end {
                 let overlap_start = cmp::max(start, search_start);
                 let overlap_end = cmp::min(search_end, end);
-                result_map.insert(overlap_start,
-                                  FindRangeOutput {
-                                    start: overlap_start,
-                                    size: overlap_end - overlap_start,
-                                    satpoint: SatPoint {
-                                      outpoint: *outpoint,
-                                      offset: offset + overlap_start - start,
-                                    },
-                                  });
+                result_map.insert(
+                  overlap_start,
+                  FindRangeOutput {
+                    start: overlap_start,
+                    size: overlap_end - overlap_start,
+                    satpoint: SatPoint {
+                      outpoint: *outpoint,
+                      offset: offset + overlap_start - start,
+                    },
+                  },
+                );
               }
               offset += end - start;
             }
@@ -1810,13 +1810,21 @@ mod tests {
   fn find_first_sat() {
     let context = Context::builder().arg("--index-sats").build();
     assert_eq!(
-      context.index.find(0, &Vec::new()).unwrap().unwrap(),
-      SatPoint {
-        outpoint: "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0"
-          .parse()
-          .unwrap(),
-        offset: 0,
-      }
+      context
+        .index
+        .find(Sat(0), Sat(1), &Vec::new())
+        .unwrap()
+        .unwrap(),
+      vec![FindRangeOutput {
+        start: 0,
+        size: 1,
+        satpoint: SatPoint {
+          outpoint: "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0"
+            .parse()
+            .unwrap(),
+          offset: 0,
+        }
+      }]
     )
   }
 
@@ -1824,13 +1832,21 @@ mod tests {
   fn find_second_sat() {
     let context = Context::builder().arg("--index-sats").build();
     assert_eq!(
-      context.index.find(1, &Vec::new()).unwrap().unwrap(),
-      SatPoint {
-        outpoint: "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0"
-          .parse()
-          .unwrap(),
-        offset: 1,
-      }
+      context
+        .index
+        .find(Sat(1), Sat(2), &Vec::new())
+        .unwrap()
+        .unwrap(),
+      vec![FindRangeOutput {
+        start: 1,
+        size: 1,
+        satpoint: SatPoint {
+          outpoint: "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b:0"
+            .parse()
+            .unwrap(),
+          offset: 1,
+        }
+      }]
     )
   }
 
@@ -1841,15 +1857,19 @@ mod tests {
     assert_eq!(
       context
         .index
-        .find(50 * COIN_VALUE, &Vec::new())
+        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new())
         .unwrap()
         .unwrap(),
-      SatPoint {
-        outpoint: "30f2f037629c6a21c1f40ed39b9bd6278df39762d68d07f49582b23bcb23386a:0"
-          .parse()
-          .unwrap(),
-        offset: 0,
-      }
+      vec![FindRangeOutput {
+        start: 50 * COIN_VALUE,
+        size: 1,
+        satpoint: SatPoint {
+          outpoint: "30f2f037629c6a21c1f40ed39b9bd6278df39762d68d07f49582b23bcb23386a:0"
+            .parse()
+            .unwrap(),
+          offset: 0,
+        }
+      }]
     )
   }
 
@@ -1857,7 +1877,10 @@ mod tests {
   fn find_unmined_sat() {
     let context = Context::builder().arg("--index-sats").build();
     assert_eq!(
-      context.index.find(50 * COIN_VALUE, &Vec::new()).unwrap(),
+      context
+        .index
+        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new())
+        .unwrap(),
       None
     );
   }
@@ -1875,13 +1898,17 @@ mod tests {
     assert_eq!(
       context
         .index
-        .find(50 * COIN_VALUE, &Vec::new())
+        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new())
         .unwrap()
         .unwrap(),
-      SatPoint {
-        outpoint: OutPoint::new(spend_txid, 0),
-        offset: 0,
-      }
+      vec![FindRangeOutput {
+        start: 50 * COIN_VALUE,
+        size: 1,
+        satpoint: SatPoint {
+          outpoint: OutPoint::new(spend_txid, 0),
+          offset: 0,
+        }
+      }]
     )
   }
 
