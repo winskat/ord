@@ -12,6 +12,8 @@ pub(crate) struct Find {
     help = "Read a list of sats and ranges to find from a file. One sat or range per line. Ranges written as <start>-<end>."
   )]
   file: Vec<PathBuf>,
+  #[clap(long, help = "Ignore bad sat ranges.")]
+  ignore: bool,
   #[clap(help = "Find output and offset of <SAT>.")]
   sat: Option<Sat>,
   #[clap(help = "Find output and offset of all sats in the range <SAT>-<END>.")]
@@ -107,7 +109,13 @@ impl Find {
     for (sat, end) in targets {
       match index.find(sat, end, &self.outpoint)? {
         Some(result) => results.extend(result),
-        None => return Err(anyhow!("range has not been mined as of index height")),
+        None => {
+          if !self.ignore {
+            return Err(anyhow!(
+              "range {sat}-{end} not found; use --ignore to continue anyway"
+            ));
+          }
+        }
       }
     }
 
