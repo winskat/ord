@@ -14,6 +14,14 @@ pub(crate) struct Find {
   file: Vec<PathBuf>,
   #[clap(long, help = "Ignore bad sat ranges.")]
   ignore: bool,
+  #[clap(long, help = "Show addresses in the results.")]
+  show_address: bool,
+  #[clap(long, help = "Show blockhashes in the results.")]
+  show_blockhash: bool,
+  #[clap(long, help = "Show sat names in the results.")]
+  show_name: bool,
+  #[clap(long, help = "Show timestamps in the results.")]
+  show_time: bool,
   #[clap(help = "Find output and offset of <SAT>.")]
   sat: Option<Sat>,
   #[clap(help = "Find output and offset of all sats in the range <SAT>-<END>.")]
@@ -22,7 +30,17 @@ pub(crate) struct Find {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Output {
+  pub start: u64,
+  pub size: u64,
   pub satpoint: SatPoint,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub address: Option<Address<NetworkUnchecked>>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub blockhash: Option<bitcoin::BlockHash>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub name: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub timestamp: Option<usize>,
 }
 
 impl Find {
@@ -107,8 +125,12 @@ impl Find {
 
     // loop through targets
     for (sat, end) in targets {
+      // eprintln!("find {sat}-{end}");
       match index.find(sat, end, &self.outpoint)? {
-        Some(result) => results.extend(result),
+        Some(result) => {
+          // eprintln!("  found {} satpoints", result.len());
+          results.extend(result);
+        }
         None => {
           if !self.ignore {
             return Err(anyhow!(
@@ -119,7 +141,57 @@ impl Find {
       }
     }
 
-    print_json(results)?;
+    let mut detailed_results = Vec::new();
+
+    // let gbt = options.chain().genesis_block().coinbase().unwrap().clone();
+    // print_json(&gbt)?;
+    // println!("gbt.output = {:?}", options.chain().address_from_script(&gbt.output[0].script_pubkey));
+    // result.satpoint.outpoint.txid == gbt.txid()
+
+    for result in results {
+      let tx = if self.show_address || self.show_blockhash || self.show_time {
+        index
+          .get_transaction_info(result.satpoint.outpoint.txid)
+          .ok()
+      } else {
+        None
+      };
+
+      let mut result = Output {
+        start: result.start,
+        size: result.size,
+        satpoint: result.satpoint,
+        address: None,
+        blockhash: None,
+        name: None,
+        timestamp: None,
+      };
+
+      if let Some(tx) = tx.clone() {
+        if self.show_address {
+          result.address = tx.vout[result.satpoint.outpoint.vout as usize]
+            .script_pub_key
+            .address
+            .clone();
+        }
+
+        if self.show_blockhash {
+          result.blockhash = tx.blockhash;
+        }
+
+        if self.show_time {
+          result.timestamp = tx.time;
+        }
+      }
+
+      if self.show_name {
+        result.name = Some(Sat(result.start).name());
+      }
+
+      detailed_results.push(result);
+    }
+
+    print_json(detailed_results)?;
 
     Ok(())
   }

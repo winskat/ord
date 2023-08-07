@@ -10,7 +10,10 @@ use {
   super::*,
   crate::wallet::Wallet,
   bitcoin::block::Header,
-  bitcoincore_rpc::{json::GetBlockHeaderResult, Client},
+  bitcoincore_rpc::{
+    json::{GetBlockHeaderResult, GetRawTransactionResult},
+    Client,
+  },
   chrono::SubsecRound,
   indicatif::{ProgressBar, ProgressStyle},
   log::log_enabled,
@@ -729,6 +732,13 @@ impl Index {
     } else {
       self.client.get_raw_transaction(&txid, None).into_option()
     }
+  }
+
+  pub(crate) fn get_transaction_info(
+    &self,
+    txid: Txid,
+  ) -> Result<GetRawTransactionResult, bitcoincore_rpc::Error> {
+    self.client.get_raw_transaction_info(&txid, None)
   }
 
   pub(crate) fn get_transaction_blockhash(&self, txid: Txid) -> Result<Option<BlockHash>> {
