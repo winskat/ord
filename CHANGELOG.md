@@ -1,11 +1,17 @@
 Changelog
 =========
 
+[0.8.1-gm12](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm12) - 2023-08-06
+----------------------------------------------------------------------------------
+
+### Added
+- Add flags `--show-date`, and `--show-value` to `ord find` to add fields to the results.
+
 [0.8.1-gm11](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm11) - 2023-08-06
 ----------------------------------------------------------------------------------
 
 ### Added
-- Add flags `--show-address`, `--show-blockhash`, `--show-name`, `show-time` to `ord find` to add fields to the results.
+- Add flags `--show-address`, `--show-blockhash`, `--show-name`, `--show-time` to `ord find` to add fields to the results.
 
 ### Changed
 - Store 3 bytes per outpoint not 2, to reduce the number of collisions.
