@@ -141,7 +141,7 @@ impl Find {
     // loop through targets
     for (sat, end) in targets {
       // eprintln!("find {sat}-{end}");
-      match index.find(sat, end, &self.outpoint)? {
+      match index.find(sat, end, &self.outpoint, self.ignore)? {
         Some(result) => {
           // eprintln!("  found {} satpoints", result.len());
           results.extend(result);
