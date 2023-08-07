@@ -15,8 +15,10 @@ fn find_command_returns_satpoint_for_sat() {
         .unwrap(),
       address: None,
       blockhash: None,
+      date: None,
       name: None,
       timestamp: None,
+      value: None,
     }
   );
 }

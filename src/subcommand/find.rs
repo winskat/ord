@@ -1,5 +1,6 @@
 use {
   super::*,
+  chrono::NaiveDateTime,
   std::io::{BufRead, BufReader},
 };
 
@@ -18,10 +19,14 @@ pub(crate) struct Find {
   show_address: bool,
   #[clap(long, help = "Show blockhashes in the results.")]
   show_blockhash: bool,
+  #[clap(long, help = "Show dates in the results.")]
+  show_date: bool,
   #[clap(long, help = "Show sat names in the results.")]
   show_name: bool,
   #[clap(long, help = "Show timestamps in the results.")]
   show_time: bool,
+  #[clap(long, help = "Show output values in the results.")]
+  show_value: bool,
   #[clap(help = "Find output and offset of <SAT>.")]
   sat: Option<Sat>,
   #[clap(help = "Find output and offset of all sats in the range <SAT>-<END>.")]
@@ -38,9 +43,13 @@ pub struct Output {
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub blockhash: Option<bitcoin::BlockHash>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub date: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub timestamp: Option<usize>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub value: Option<u64>,
 }
 
 impl Find {
@@ -149,7 +158,12 @@ impl Find {
     // result.satpoint.outpoint.txid == gbt.txid()
 
     for result in results {
-      let tx = if self.show_address || self.show_blockhash || self.show_time {
+      let tx = if self.show_address
+        || self.show_blockhash
+        || self.show_date
+        || self.show_time
+        || self.show_value
+      {
         index
           .get_transaction_info(result.satpoint.outpoint.txid)
           .ok()
@@ -163,8 +177,10 @@ impl Find {
         satpoint: result.satpoint,
         address: None,
         blockhash: None,
+        date: None,
         name: None,
         timestamp: None,
+        value: None,
       };
 
       if let Some(tx) = tx.clone() {
@@ -179,8 +195,25 @@ impl Find {
           result.blockhash = tx.blockhash;
         }
 
+        if self.show_date {
+          result.date = Some(
+            NaiveDateTime::from_timestamp_opt(tx.time.unwrap() as i64, 0)
+              .unwrap()
+              .format("%Y-%m-%d %H:%M:%S")
+              .to_string(),
+          );
+        }
+
         if self.show_time {
           result.timestamp = tx.time;
+        }
+
+        if self.show_value {
+          result.value = Some(
+            tx.vout[result.satpoint.outpoint.vout as usize]
+              .value
+              .to_sat(),
+          );
         }
       }
 
