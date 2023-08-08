@@ -27,6 +27,8 @@ pub(crate) struct Find {
   show_blockhash: bool,
   #[clap(long, help = "Show dates in the results.")]
   show_date: bool,
+  #[clap(long, help = "Show block heights in the results.")]
+  show_height: bool,
   #[clap(long, help = "Show sat names in the results.")]
   show_name: bool,
   #[clap(long, help = "Show timestamps in the results.")]
@@ -50,6 +52,8 @@ pub struct Output {
   pub blockhash: Option<bitcoin::BlockHash>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub date: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub height: Option<usize>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -167,6 +171,7 @@ impl Find {
       let tx = if self.show_address
         || self.show_blockhash
         || self.show_date
+        || self.show_height
         || self.show_time
         || self.show_value
       {
@@ -184,6 +189,7 @@ impl Find {
         address: None,
         blockhash: None,
         date: None,
+        height: None,
         name: None,
         timestamp: None,
         value: None,
@@ -199,6 +205,10 @@ impl Find {
 
         if self.show_blockhash {
           result.blockhash = tx.blockhash;
+        }
+
+        if self.show_height {
+          result.height = Some(index.get_block_height(tx.blockhash.unwrap())?);
         }
 
         if self.show_date {

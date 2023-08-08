@@ -741,6 +741,13 @@ impl Index {
     self.client.get_raw_transaction_info(&txid, None)
   }
 
+  pub(crate) fn get_block_height(
+    &self,
+    blockhash: bitcoin::BlockHash,
+  ) -> Result<usize, bitcoincore_rpc::Error> {
+    Ok(self.client.get_block_header_info(&blockhash)?.height)
+  }
+
   pub(crate) fn get_transaction_blockhash(&self, txid: Txid) -> Result<Option<BlockHash>> {
     Ok(
       self
