@@ -44,17 +44,17 @@ pub struct Output {
   pub start: u64,
   pub size: u64,
   pub satpoint: SatPoint,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub address: Option<Address<NetworkUnchecked>>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub blockhash: Option<bitcoin::BlockHash>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub date: Option<String>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub timestamp: Option<usize>,
-  #[serde(default, skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub value: Option<u64>,
 }
 
