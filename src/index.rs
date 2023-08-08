@@ -856,10 +856,11 @@ impl Index {
                     tprintln!("| | | should break 'outer;");
                     break 'outer;
                   }
-                } else if allow_bad_ranges { // we shouldn't get here unless we know we aren't going to find all the sats because they don't all exist yet
+                } else if allow_bad_ranges {
+                  // we shouldn't get here unless we know we aren't going to find all the sats because they don't all exist yet
                   tprintln!("no overlap found - this would usually be a panic, but continuing because --ignore");
                   break 'outer;
-                } else  {
+                } else {
                   panic!("no overlap");
                 }
 
@@ -1889,7 +1890,12 @@ mod tests {
     assert_eq!(
       context
         .index
-        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new(), false)
+        .find(
+          Sat(50 * COIN_VALUE),
+          Sat(50 * COIN_VALUE + 1),
+          &Vec::new(),
+          false
+        )
         .unwrap()
         .unwrap(),
       vec![FindRangeOutput {
@@ -1911,7 +1917,12 @@ mod tests {
     assert_eq!(
       context
         .index
-        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new(), false)
+        .find(
+          Sat(50 * COIN_VALUE),
+          Sat(50 * COIN_VALUE + 1),
+          &Vec::new(),
+          false
+        )
         .unwrap(),
       None
     );
@@ -1930,7 +1941,12 @@ mod tests {
     assert_eq!(
       context
         .index
-        .find(Sat(50 * COIN_VALUE), Sat(50 * COIN_VALUE + 1), &Vec::new(), false)
+        .find(
+          Sat(50 * COIN_VALUE),
+          Sat(50 * COIN_VALUE + 1),
+          &Vec::new(),
+          false
+        )
         .unwrap()
         .unwrap(),
       vec![FindRangeOutput {
