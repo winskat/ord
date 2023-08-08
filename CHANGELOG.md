@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm16](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm16) - 2023-08-08
+----------------------------------------------------------------------------------
+
+### Added
+- Add `--commit` flag to set how often to write changes to disk when indexing.
+
 [0.8.1-gm15](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm15) - 2023-08-08
 ----------------------------------------------------------------------------------
 
