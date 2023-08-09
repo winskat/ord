@@ -34,6 +34,7 @@ pub(crate) struct Updater {
   height: u64,
   index_sats: bool,
   index_utxos: bool,
+  skip_empty_outputs: bool,
   sat_ranges_since_flush: u64,
   outputs_cached: u64,
   outputs_inserted_since_flush: u64,
@@ -71,6 +72,7 @@ impl Updater {
       height,
       index_sats: index.has_sat_index()?,
       index_utxos: index.has_utxo_index()?,
+      skip_empty_outputs: index.options.skip_empty_outputs,
       sat_ranges_since_flush: 0,
       outputs_cached: 0,
       outputs_inserted_since_flush: 0,
@@ -484,11 +486,16 @@ impl Updater {
               self.outputs_cached += 1;
               sat_ranges
             }
-            None => outpoint_to_sat_ranges
-              .remove(&key)?
-              .ok_or_else(|| anyhow!("Could not find outpoint {} in index", input.previous_output))?
-              .value()
-              .to_vec(),
+            None => match outpoint_to_sat_ranges.remove(&key)? { // Result<Option<AccessGuard<>>> -> Option<AccessGuard<>>
+              Some(value) => value.value().to_vec(),
+              None => {
+                if index.get_outpoint_value(&input.previous_output).ok().unwrap() == 0 {
+                  tprintln!("spending non-indexed empty output {}", input.previous_output);
+                  continue;
+                }
+                panic!("Could not find outpoint {} in index", input.previous_output);
+              }
+            }
           };
 
           for chunk in sat_ranges.chunks_exact(11) {
@@ -664,23 +671,27 @@ impl Updater {
 
       *outputs_traversed += 1;
 
-      let old_value = self.range_cache.insert(outpoint.store(), sats);
-      if let Some(old_value) = old_value {
-        let mut sats = VecDeque::new();
-        for chunk in old_value.chunks_exact(11) {
-          let range: SatRange = SatRange::load(chunk.try_into().unwrap());
-          sats.push_back(range);
-        }
+      if sats.is_empty() && self.skip_empty_outputs {
+        tprintln!("not indexing empty output {outpoint}");
+      } else {
+        let old_value = self.range_cache.insert(outpoint.store(), sats);
+        if let Some(old_value) = old_value {
+          let mut sats = VecDeque::new();
+          for chunk in old_value.chunks_exact(11) {
+            let range: SatRange = SatRange::load(chunk.try_into().unwrap());
+            sats.push_back(range);
+          }
 
-        Self::mark_sats_as_lost(
-          sats,
-          lost_sats,
-          outpoint_to_sat_ranges,
-          sat_to_satpoint,
-          sat_to_outpoint,
-        )?;
+          Self::mark_sats_as_lost(
+            sats,
+            lost_sats,
+            outpoint_to_sat_ranges,
+            sat_to_satpoint,
+            sat_to_outpoint,
+          )?;
+        }
+        self.outputs_inserted_since_flush += 1;
       }
-      self.outputs_inserted_since_flush += 1;
     }
 
     Ok(())
