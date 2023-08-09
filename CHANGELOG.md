@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm18](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm18) - 2023-08-09
+----------------------------------------------------------------------------------
+
+### Added
+- Add `--skip-empty-outputs` flag to avoid indexing any 0-sat utxos. This is experimental and could well break things. Or it might make the index smaller or faster or both. Let's see, shall we?
+
 [0.8.1-gm17](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm17) - 2023-08-09
 ----------------------------------------------------------------------------------
 
