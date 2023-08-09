@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm17](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm17) - 2023-08-09
+----------------------------------------------------------------------------------
+
+### Changed
+- Fix tracking of sats 458610000000000 and 459060000000000 from the duplicate coinbase blocks. There are two pairs of duplicate coinbase txs (see blocks 91722, 91880 and 91812, 91842). Now the overshadowed sats are moved to the lost sats list.
+
 [0.8.1-gm16](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm16) - 2023-08-08
 ----------------------------------------------------------------------------------
 
