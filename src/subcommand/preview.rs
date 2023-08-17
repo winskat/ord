@@ -93,6 +93,7 @@ impl Preview {
           destination: Vec::new(),
           alignment: None,
           cursed_destination: None,
+          cursed_utxo: None,
           cursed: false,
           change: None,
           postage: Some(TransactionBuilder::DEFAULT_TARGET_POSTAGE),

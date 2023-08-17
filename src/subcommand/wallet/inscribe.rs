@@ -104,6 +104,8 @@ pub(crate) struct Inscribe {
   pub(crate) change: Option<Address<NetworkUnchecked>>,
   #[clap(long, help = "Send the first output of any cursed reveal tx to <CURSED_DESTINATION>.")]
   pub(crate) cursed_destination: Option<Address<NetworkUnchecked>>,
+  #[clap(long, help = "Use <CURSED_UTXO> as the first input of any cursed reveal tx.")]
+  pub(crate) cursed_utxo: Option<OutPoint>,
   #[clap(
     long,
     help = "Amount of postage to include in the inscription. Default `10000 sats`"
@@ -266,19 +268,23 @@ impl Inscribe {
 
       let mut smallest_value = 0;
       let mut cursed_outpoint = None;
-      for outpoint in utxos.keys().filter(|outpoint| {
-        !inscribed_utxos.contains(outpoint)
-          && (self.satpoint.is_none() || **outpoint != self.satpoint.unwrap().outpoint)
-          && utxos[outpoint].to_sat() >= 546
-      }) {
-        if smallest_value == 0 || utxos[outpoint].to_sat() < smallest_value {
-          smallest_value = utxos[outpoint].to_sat();
-          cursed_outpoint = Some(*outpoint);
+      if let Some(cursed_utxo) = self.cursed_utxo {
+        cursed_outpoint = Some(cursed_utxo);
+      } else {
+        for outpoint in utxos.keys().filter(|outpoint| {
+          !inscribed_utxos.contains(outpoint)
+            && (self.satpoint.is_none() || **outpoint != self.satpoint.unwrap().outpoint)
+            && utxos[outpoint].to_sat() >= 546
+        }) {
+          if smallest_value == 0 || utxos[outpoint].to_sat() < smallest_value {
+            smallest_value = utxos[outpoint].to_sat();
+            cursed_outpoint = Some(*outpoint);
+          }
         }
-      }
 
-      if smallest_value == 0 {
-        return Err(anyhow!("wallet contains no cardinal utxos"));
+        if smallest_value == 0 {
+          return Err(anyhow!("wallet contains no cardinal utxos"));
+        }
       }
 
       let cursed_txout = index
