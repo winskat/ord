@@ -102,6 +102,8 @@ pub(crate) struct Inscribe {
   pub(crate) alignment: Option<Address<NetworkUnchecked>>,
   #[clap(long, help = "Send any change output to <CHANGE>.")]
   pub(crate) change: Option<Address<NetworkUnchecked>>,
+  #[clap(long, help = "Send the first output of any cursed reveal tx to <CURSED_DESTINATION>.")]
+  pub(crate) cursed_destination: Option<Address<NetworkUnchecked>>,
   #[clap(
     long,
     help = "Amount of postage to include in the inscription. Default `10000 sats`"
@@ -250,6 +252,12 @@ impl Inscribe {
         .unwrap()
     });
 
+    let cursed_destination = self.cursed_destination.map(|cursed_destination| {
+      cursed_destination
+        .require_network(options.chain().network())
+        .unwrap()
+    });
+
     let (cursed_outpoint, cursed_txout, reveal_vin_from_commit) = if self.cursed {
       let inscribed_utxos = inscriptions
         .keys()
@@ -297,6 +305,7 @@ impl Inscribe {
         commit_tx_change,
         destinations,
         alignment,
+        cursed_destination,
         cursed_outpoint,
         cursed_txout,
         self.commit_fee_rate.unwrap_or(self.fee_rate),
@@ -621,6 +630,7 @@ impl Inscribe {
     change: [Address; 2],
     destinations: Vec<Address>,
     alignment: Option<Address>,
+    cursed_destination: Option<Address>,
     cursed_outpoint: Option<OutPoint>,
     cursed_txout: Option<TxOut>,
     commit_fee_rate: FeeRate,
@@ -727,7 +737,10 @@ impl Inscribe {
         outputs.insert(
           0,
           TxOut {
-            script_pubkey: cursed_txout.script_pubkey.clone(),
+            script_pubkey: match cursed_destination.clone() {
+              Some(cursed_destination) => cursed_destination.script_pubkey(),
+              None => cursed_txout.script_pubkey.clone(),
+            },
             value: cursed_txout.value,
           },
         );
@@ -796,7 +809,10 @@ impl Inscribe {
         outputs.insert(
           0,
           TxOut {
-            script_pubkey: cursed_txout.script_pubkey.clone(),
+            script_pubkey: match cursed_destination.clone() {
+              Some(cursed_destination) => cursed_destination.script_pubkey(),
+              None => cursed_txout.script_pubkey.clone(),
+            },
             value: cursed_txout.value,
           },
         );
@@ -1008,6 +1024,7 @@ mod tests {
         None,
         None,
         None,
+        None,
         FeeRate::try_from(1.0).unwrap(),
         FeeRate::try_from(1.0).unwrap(),
         None,
@@ -1044,6 +1061,7 @@ mod tests {
       utxos.into_iter().collect(),
       [commit_address, change(1)],
       reveal_address,
+      None,
       None,
       None,
       None,
@@ -1087,6 +1105,7 @@ mod tests {
       utxos.into_iter().collect(),
       [commit_address, change(1)],
       reveal_address,
+      None,
       None,
       None,
       None,
@@ -1140,6 +1159,7 @@ mod tests {
       None,
       None,
       None,
+      None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
       None,
@@ -1182,6 +1202,7 @@ mod tests {
         utxos.into_iter().collect(),
         [commit_address, change(1)],
         reveal_address,
+        None,
         None,
         None,
         None,
@@ -1258,6 +1279,7 @@ mod tests {
         None,
         None,
         None,
+        None,
         FeeRate::try_from(commit_fee_rate).unwrap(),
         FeeRate::try_from(fee_rate).unwrap(),
         None,
@@ -1315,6 +1337,7 @@ mod tests {
       None,
       None,
       None,
+      None,
       FeeRate::try_from(1.0).unwrap(),
       FeeRate::try_from(1.0).unwrap(),
       None,
@@ -1352,6 +1375,7 @@ mod tests {
         utxos.into_iter().collect(),
         [commit_address, change(1)],
         reveal_address,
+        None,
         None,
         None,
         None,
