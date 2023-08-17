@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm20](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm20) - 2023-08-16
+----------------------------------------------------------------------------------
+
+### Added
+- Add `--cursed-utxo` flag to `wallet inscribe` to specify which utxo to use for the first input to the cursed reveal tx.
+
 [0.8.1-gm19](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm19) - 2023-08-16
 ----------------------------------------------------------------------------------
 
