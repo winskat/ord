@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm19](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm19) - 2023-08-16
+----------------------------------------------------------------------------------
+
+### Added
+- Add `--cursed-destination` flag to `wallet inscribe` to specify where the cursing reveal input should be sent.
+
 [0.8.1-gm18](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm18) - 2023-08-09
 ----------------------------------------------------------------------------------
 
