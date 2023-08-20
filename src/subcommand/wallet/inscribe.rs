@@ -641,7 +641,7 @@ impl Inscribe {
     for i in &tx.input {
       sum_in += utxos
         .get(&i.previous_output)
-        .expect(format!("can't find utxo {}", i.previous_output).as_str())
+        .unwrap_or_else(|| panic!("can't find utxo {}", i.previous_output))
         .to_sat();
       tprintln!(
         "    value {} {}",
@@ -718,13 +718,11 @@ impl Inscribe {
         if !allow_reinscribe {
           return Err(anyhow!("sat at {} already inscribed", satpoint));
         }
-      } else if inscribed_satpoint.outpoint == satpoint.outpoint {
-        if !ignore_utxo_inscriptions {
-          return Err(anyhow!(
-            "utxo {} already inscribed with inscription {inscription_id} on sat {inscribed_satpoint}",
-            satpoint.outpoint,
-            ));
-        }
+      } else if inscribed_satpoint.outpoint == satpoint.outpoint && !ignore_utxo_inscriptions {
+        return Err(anyhow!(
+          "utxo {} already inscribed with inscription {inscription_id} on sat {inscribed_satpoint}",
+          satpoint.outpoint,
+        ));
       }
     }
 
@@ -930,11 +928,7 @@ impl Inscribe {
         .witness_mut(reveal_vout_postage)
         .expect("getting mutable witness reference should work");
 
-      if allow_reveal_rbf {
-        let mut signature = signature.as_ref().to_vec();
-        signature.push(hash_ty as u8);
-        witness.push(signature);
-      } else if cursed_outpoint.is_some() {
+      if allow_reveal_rbf || cursed_outpoint.is_some() {
         let mut signature = signature.as_ref().to_vec();
         signature.push(hash_ty as u8);
         witness.push(signature);
@@ -1095,6 +1089,8 @@ mod tests {
         false,
         false,
         false,
+        false,
+        false,
       )
       .unwrap();
 
@@ -1132,6 +1128,8 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
+      false,
       false,
       false,
       false,
@@ -1176,6 +1174,8 @@ mod tests {
       None,
       false,
       TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+      false,
+      false,
       false,
       false,
       false,
@@ -1230,6 +1230,8 @@ mod tests {
       false,
       false,
       false,
+      false,
+      false,
     )
     .is_ok())
   }
@@ -1273,6 +1275,8 @@ mod tests {
         None,
         false,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
+        false,
         false,
         false,
         false,
@@ -1350,6 +1354,8 @@ mod tests {
         false,
         false,
         false,
+        false,
+        false,
       )
       .unwrap();
 
@@ -1408,6 +1414,8 @@ mod tests {
       false,
       false,
       false,
+      false,
+      false,
     )
     .unwrap_err()
     .to_string();
@@ -1446,6 +1454,8 @@ mod tests {
         None,
         true,
         TransactionBuilder::DEFAULT_TARGET_POSTAGE,
+        false,
+        false,
         false,
         false,
         false,
