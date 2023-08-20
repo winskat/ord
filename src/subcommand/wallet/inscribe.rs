@@ -633,12 +633,12 @@ impl Inscribe {
     tprintln!("  with {} inputs", tx.input.len());
     let mut sum_in = 0;
     for i in &tx.input {
+      sum_in += utxos.get(&i.previous_output).expect(format!("can't find utxo {}", i.previous_output).as_str()).to_sat();
       tprintln!(
         "    value {} {}",
         utxos.get(&i.previous_output).unwrap().to_sat(),
         i.previous_output
       );
-      sum_in += utxos.get(&i.previous_output).unwrap().to_sat()
     }
     tprintln!("      total: {}", sum_in);
     tprintln!("  and {} outputs:", tx.output.len());
