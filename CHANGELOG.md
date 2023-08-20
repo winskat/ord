@@ -1,6 +1,12 @@
 Changelog
 =========
 
+[0.8.1-gm22](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm22) - 2023-08-20
+----------------------------------------------------------------------------------
+
+### Added
+- Add `--allow-reveal-rbf` and `--unfunded-reveal` to `wallet inscribe`.
+
 [0.8.1-gm21](https://github.com/gmart7t2/ord/releases/tag/0.8.1-gm21) - 2023-08-17
 ----------------------------------------------------------------------------------
 
