@@ -102,9 +102,15 @@ pub(crate) struct Inscribe {
   pub(crate) alignment: Option<Address<NetworkUnchecked>>,
   #[clap(long, help = "Send any change output to <CHANGE>.")]
   pub(crate) change: Option<Address<NetworkUnchecked>>,
-  #[clap(long, help = "Send the first output of any cursed reveal tx to <CURSED_DESTINATION>.")]
+  #[clap(
+    long,
+    help = "Send the first output of any cursed reveal tx to <CURSED_DESTINATION>."
+  )]
   pub(crate) cursed_destination: Option<Address<NetworkUnchecked>>,
-  #[clap(long, help = "Use <CURSED_UTXO> as the first input of any cursed reveal tx.")]
+  #[clap(
+    long,
+    help = "Use <CURSED_UTXO> as the first input of any cursed reveal tx."
+  )]
   pub(crate) cursed_utxo: Option<OutPoint>,
   #[clap(
     long,
@@ -633,7 +639,10 @@ impl Inscribe {
     tprintln!("  with {} inputs", tx.input.len());
     let mut sum_in = 0;
     for i in &tx.input {
-      sum_in += utxos.get(&i.previous_output).expect(format!("can't find utxo {}", i.previous_output).as_str()).to_sat();
+      sum_in += utxos
+        .get(&i.previous_output)
+        .expect(format!("can't find utxo {}", i.previous_output).as_str())
+        .to_sat();
       tprintln!(
         "    value {} {}",
         utxos.get(&i.previous_output).unwrap().to_sat(),

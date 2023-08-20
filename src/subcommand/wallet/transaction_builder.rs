@@ -325,7 +325,7 @@ impl TransactionBuilder {
         if self.outgoing.outpoint == inscribed_satpoint.outpoint
           && self.outgoing.offset != inscribed_satpoint.offset
           && (self.outgoing.offset < inscribed_satpoint.offset
-              || (self.outgoing.offset > 0 && self.outgoing.offset < dust_limit))
+            || (self.outgoing.offset > 0 && self.outgoing.offset < dust_limit))
         {
           return Err(Error::UtxoContainsAdditionalInscription {
             outgoing_satpoint: self.outgoing,
