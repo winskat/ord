@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.2-gm1](https://github.com/gmart7t2/ord/releases/tag/0.8.2-gm1) - 2023-08-22
+---------------------------------------------------------------------------------
+
+### Changed
+-- Merged 0.8.2 from upstream.
+-- Small fix to reorg logging.
+
 [0.8.2](https://github.com/ordinals/ord/releases/tag/0.8.2) - 2023-08-17
 ---------------------------------------------------------------------
 
