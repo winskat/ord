@@ -240,6 +240,7 @@ impl Server {
         .route("/inscriptions", get(Self::inscriptions))
         .route("/inscriptions/block/:n", get(Self::inscriptions_in_block))
         .route("/inscriptions/:from", get(Self::inscriptions_from))
+        .route("/inscriptions/:from/:n", get(Self::inscriptions_from_n))
         .route(
           "/inscriptions_json/:start",
           get(Self::inscriptions_json_start),
@@ -248,7 +249,6 @@ impl Server {
           "/inscriptions_json/:start/:end",
           get(Self::inscriptions_json_start_end),
         )
-        .route("/inscriptions/:from/:n", get(Self::inscriptions_from_n))
         .route("/install.sh", get(Self::install_script))
         .route("/ordinal/:sat", get(Self::ordinal))
         .route("/output/:output", get(Self::output))
