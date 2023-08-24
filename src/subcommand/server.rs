@@ -1163,6 +1163,7 @@ impl Server {
     Path(block_height): Path<u64>,
     accept_json: AcceptJson,
   ) -> ServerResult<Response> {
+    log::info!("GET /inscriptions/block/{block_height}");
     let inscriptions = index
       .get_inscriptions_in_block(&block_index_state.block_index.read().unwrap(), block_height)?;
     Ok(if accept_json.0 {
@@ -1194,6 +1195,7 @@ impl Server {
     Path((from, n)): Path<(i64, usize)>,
     accept_json: AcceptJson,
   ) -> ServerResult<Response> {
+    log::info!("GET /inscriptions/{from}/{n}");
     Self::inscriptions_inner(page_config, index, Some(from), n, accept_json).await
   }
 
