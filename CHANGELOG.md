@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[0.8.2-gm3](https://github.com/gmart7t2/ord/releases/tag/0.8.2-gm3) - 2023-08-24
+---------------------------------------------------------------------------------
+
+### Changed
+-- Fix `--single-key` when inscribing the same file multiple times.
+-- Add logging to the new server endpoints.
+
 [0.8.2-gm2](https://github.com/gmart7t2/ord/releases/tag/0.8.2-gm2) - 2023-08-23
 ---------------------------------------------------------------------------------
 
