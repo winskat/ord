@@ -314,9 +314,13 @@ impl Index {
     let outpoint_to_value = rtx.open_table(OUTPOINT_TO_VALUE)?;
     for outpoint in utxos.keys() {
       if outpoint_to_value.get(&outpoint.store())?.is_none() {
-        return Err(anyhow!(
-          "output in Bitcoin Core wallet but not in ord index: {outpoint}"
-        ));
+        if self.options.allow_missing_outputs {
+          eprintln!("output in Bitcoin Core wallet but not in ord index: {outpoint}");
+        } else {
+          return Err(anyhow!(
+            "output in Bitcoin Core wallet but not in ord index: {outpoint}"
+          ));
+        }
       }
     }
 
