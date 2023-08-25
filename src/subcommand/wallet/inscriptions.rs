@@ -21,7 +21,7 @@ pub struct OutputWithoutSat {
 
 #[derive(Debug, Parser)]
 pub(crate) struct Inscriptions {
-  #[clap(long, help = "Send any change output to <CHANGE>.")]
+  #[clap(long, help = "Only show inscriptions owned by <ADDRESS>.")]
   address: Option<Address<NetworkUnchecked>>,
 }
 
