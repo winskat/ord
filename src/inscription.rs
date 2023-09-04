@@ -25,7 +25,7 @@ pub(crate) enum Curse {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Inscription {
+pub(crate) struct Inscription {
   body: Option<Vec<u8>>,
   content_type: Option<Vec<u8>>,
 }
@@ -92,11 +92,8 @@ impl Inscription {
     &self,
     mut builder: script::Builder,
     cursed: bool,
-    end_with_1: bool,
   ) -> script::Builder {
     builder = builder
-      .push_opcode(opcodes::OP_FALSE)
-      .push_opcode(opcodes::all::OP_IF)
       .push_slice(PROTOCOL_ID);
 
     if let Some(content_type) = self.content_type.clone() {
@@ -117,18 +114,12 @@ impl Inscription {
       }
     }
 
-    builder = builder.push_opcode(opcodes::all::OP_ENDIF);
-
-    if end_with_1 {
-      builder.push_opcode(opcodes::all::OP_PUSHNUM_1)
-    } else {
-      builder
-    }
+    builder.push_opcode(opcodes::all::OP_ENDIF)
   }
 
-  pub(crate) fn append_reveal_script(&self, builder: script::Builder, cursed: bool, end_with_1: bool) -> ScriptBuf {
+  pub(crate) fn append_reveal_script(&self, builder: script::Builder, cursed: bool) -> ScriptBuf {
     self
-      .append_reveal_script_to_builder(builder, cursed, end_with_1)
+      .append_reveal_script_to_builder(builder, cursed)
       .into_script()
   }
 
@@ -164,7 +155,7 @@ impl Inscription {
   pub(crate) fn to_witness(&self) -> Witness {
     let builder = script::Builder::new();
 
-    let script = self.append_reveal_script(builder, false, false);
+    let script = self.append_reveal_script(builder, false);
 
     let mut witness = Witness::new();
 
@@ -669,8 +660,8 @@ mod tests {
   #[test]
   fn extract_from_second_envelope() {
     let mut builder = script::Builder::new();
-    builder = inscription("foo", [1; 100]).append_reveal_script_to_builder(builder, false, false);
-    builder = inscription("bar", [1; 100]).append_reveal_script_to_builder(builder, false, false);
+    builder = inscription("foo", [1; 100]).append_reveal_script_to_builder(builder, false);
+    builder = inscription("bar", [1; 100]).append_reveal_script_to_builder(builder, false);
 
     let witness = Witness::from_slice(&[builder.into_script().into_bytes(), Vec::new()]);
 
@@ -707,7 +698,7 @@ mod tests {
   fn reveal_script_chunks_data() {
     assert_eq!(
       inscription("foo", [])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       7
@@ -715,7 +706,7 @@ mod tests {
 
     assert_eq!(
       inscription("foo", [0; 1])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       8
@@ -723,7 +714,7 @@ mod tests {
 
     assert_eq!(
       inscription("foo", [0; 520])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       8
@@ -731,7 +722,7 @@ mod tests {
 
     assert_eq!(
       inscription("foo", [0; 521])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       9
@@ -739,7 +730,7 @@ mod tests {
 
     assert_eq!(
       inscription("foo", [0; 1040])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       9
@@ -747,7 +738,7 @@ mod tests {
 
     assert_eq!(
       inscription("foo", [0; 1041])
-        .append_reveal_script(script::Builder::new(), false, false)
+        .append_reveal_script(script::Builder::new(), false)
         .instructions()
         .count(),
       10
@@ -759,7 +750,7 @@ mod tests {
     let mut witness = Witness::new();
 
     witness
-      .push(&inscription("foo", [1; 1040]).append_reveal_script(script::Builder::new(), false), false);
+      .push(&inscription("foo", [1; 1040]).append_reveal_script(script::Builder::new(), false));
 
     witness.push([]);
 
@@ -778,7 +769,7 @@ mod tests {
         content_type: None,
         body: None,
       }
-      .append_reveal_script(script::Builder::new(), false, false),
+      .append_reveal_script(script::Builder::new(), false),
     );
 
     witness.push([]);
