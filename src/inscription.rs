@@ -119,7 +119,7 @@ impl Inscription {
 
     builder = builder.push_opcode(opcodes::all::OP_ENDIF);
 
-    if end_with_1 {
+    if true {
       builder.push_opcode(opcodes::all::OP_PUSHNUM_1)
     } else {
       builder
