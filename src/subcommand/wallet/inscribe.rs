@@ -754,9 +754,6 @@ impl Inscribe {
       key_pairs.push(key_pair);
 
       let mut builder = ScriptBuf::builder();
-      if !no_signature {
-        builder = builder.push_slice(public_key.serialize()).push_opcode(opcodes::all::OP_CHECKSIG);
-      }
       let reveal_script = inscription.append_reveal_script(
         builder,
         cursed66,
