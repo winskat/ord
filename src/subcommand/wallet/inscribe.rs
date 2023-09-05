@@ -755,9 +755,10 @@ impl Inscribe {
 
       let mut builder = ScriptBuf::builder();
       let reveal_script = inscription.append_reveal_script(
-        builder,
-        cursed66,
-        no_signature,
+        ScriptBuf::builder()
+          .push_slice(public_key.serialize())
+          .push_opcode(opcodes::all::OP_CHECKSIG),
+        cursed,
       );
 
       let taproot_spend_info = TaprootBuilder::new()
